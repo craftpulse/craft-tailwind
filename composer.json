@@ -1,0 +1,44 @@
+{
+    "name": "craftpulse/craft-tailwind",
+    "description": "Tailwind CSS class merging and named-slot class builder for Craft CMS 5",
+    "version": "1.0.0",
+    "type": "craft-plugin",
+    "license": "MIT",
+    "require": {
+        "php": "^8.2",
+        "craftcms/cms": "^5.0.0",
+        "gehrisandro/tailwind-merge-php": "^1.2",
+        "tales-from-a-dev/tailwind-merge-php": "^0.2"
+    },
+    "require-dev": {
+        "craftcms/ecs": "dev-main",
+        "pestphp/pest": "^3.0",
+        "phpstan/phpstan": "^1.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "craftpulse\\tailwind\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "craftpulse\\tailwindtests\\": "tests/"
+        }
+    },
+    "extra": {
+        "handle": "tailwind",
+        "name": "Tailwind",
+        "developer": "CraftPulse",
+        "developerUrl": "https://craftpulse.com",
+        "documentationUrl": "https://github.com/craftpulse/craft-tailwind",
+        "class": "craftpulse\\tailwind\\Plugin"
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "craftcms/plugin-installer": true,
+            "yiisoft/yii2-composer": true,
+            "pestphp/pest-plugin": true
+        }
+    }
+}
