@@ -1,0 +1,141 @@
+{% import '_includes/forms' as forms %}
+
+{% macro overrideWarning(key, overrides) %}
+    {% if overrides[key] is defined %}
+        <p class="warning with-icon">
+            This setting is overridden by <code>config/tailwind.php</code>.
+        </p>
+    {% endif %}
+{% endmacro %}
+
+{% from _self import overrideWarning %}
+
+{{ forms.selectField({
+    label: 'Tailwind Version',
+    instructions: 'Choose which Tailwind version to use for class merging. "Auto" detects the version from your project files.',
+    id: 'tailwindVersion',
+    name: 'tailwindVersion',
+    value: settings.tailwindVersion,
+    options: [
+        { label: 'Auto-detect', value: 'auto' },
+        { label: 'Tailwind v3', value: '3' },
+        { label: 'Tailwind v4', value: '4' },
+    ],
+    errors: settings.getErrors('tailwindVersion'),
+    disabled: overrides.tailwindVersion is defined,
+}) }}
+{{ overrideWarning('tailwindVersion', overrides) }}
+
+{{ forms.textField({
+    label: 'Buildchain Path',
+    instructions: 'Directory containing your `tailwind.config.*` files. Used for v3 detection (or v4 projects with a JS config). Leave blank to search from the project root.',
+    id: 'buildchainPath',
+    name: 'buildchainPath',
+    value: settings.buildchainPath,
+    placeholder: 'e.g. buildchain',
+    errors: settings.getErrors('buildchainPath'),
+    disabled: overrides.buildchainPath is defined,
+}) }}
+{{ overrideWarning('buildchainPath', overrides) }}
+
+{% set showCssPath = settings.tailwindVersion in ['auto', '4'] %}
+<div id="cssPath-field"{% if not showCssPath %} class="hidden"{% endif %}>
+    {{ forms.textField({
+        label: 'CSS Path',
+        instructions: 'Directory containing your Tailwind CSS entry file (e.g. the file with `@import "tailwindcss"` or `@theme`). Used for v4 detection. Leave blank to search from the project root.',
+        id: 'cssPath',
+        name: 'cssPath',
+        value: settings.cssPath,
+        placeholder: 'e.g. src/css',
+        errors: settings.getErrors('cssPath'),
+        disabled: overrides.cssPath is defined,
+    }) }}
+    {{ overrideWarning('cssPath', overrides) }}
+</div>
+
+{% js %}
+(function() {
+    var versionSelect = document.getElementById('tailwindVersion');
+    var cssPathField = document.getElementById('cssPath-field');
+    if (versionSelect && cssPathField) {
+        versionSelect.addEventListener('change', function() {
+            if (this.value === 'auto' || this.value === '4') {
+                cssPathField.classList.remove('hidden');
+            } else {
+                cssPathField.classList.add('hidden');
+            }
+        });
+    }
+})();
+{% endjs %}
+
+{% set cssVarRows = [] %}
+{% for key, value in settings.cssVariables %}
+    {% set cssVarRows = cssVarRows|merge([{
+        name: key,
+        value: value,
+    }]) %}
+{% endfor %}
+
+{{ forms.editableTableField({
+    label: 'CSS Variables',
+    instructions: 'Define CSS custom properties that will be rendered as a `:root` style block. Variable names are automatically prefixed with `--` if missing.',
+    id: 'cssVariables',
+    name: 'cssVariables',
+    cols: {
+        name: {
+            heading: 'Variable Name',
+            type: 'singleline',
+            placeholder: '--color-brand-primary',
+        },
+        value: {
+            heading: 'Value',
+            type: 'singleline',
+            placeholder: '#3490dc',
+        },
+    },
+    rows: cssVarRows,
+    errors: settings.getErrors('cssVariables'),
+    allowAdd: true,
+    allowDelete: true,
+    allowReorder: true,
+    disabled: overrides.cssVariables is defined,
+}) }}
+{{ overrideWarning('cssVariables', overrides) }}
+
+{{ forms.textField({
+    label: 'Class Prefix',
+    instructions: 'Tailwind class prefix, matching your `prefix` option in `tailwind.config.js` (e.g. `tw-`). Leave blank if you do not use a prefix.',
+    id: 'prefix',
+    name: 'prefix',
+    value: settings.prefix,
+    placeholder: 'e.g. tw-',
+    errors: settings.getErrors('prefix'),
+    disabled: overrides.prefix is defined,
+}) }}
+{{ overrideWarning('prefix', overrides) }}
+
+{{ forms.textField({
+    label: 'Cache Size',
+    instructions: 'Maximum number of merge results to keep in the LRU cache per request. Set to 0 to disable caching.',
+    id: 'cacheSize',
+    name: 'cacheSize',
+    type: 'number',
+    value: settings.cacheSize,
+    min: 0,
+    max: 10000,
+    errors: settings.getErrors('cacheSize'),
+    disabled: overrides.cacheSize is defined,
+}) }}
+{{ overrideWarning('cacheSize', overrides) }}
+
+{{ forms.lightswitchField({
+    label: 'Enable Dev Logging',
+    instructions: 'When enabled and devMode is active, the plugin logs merge conflict resolutions to help you debug class collisions.',
+    id: 'enableDevLogging',
+    name: 'enableDevLogging',
+    on: settings.enableDevLogging,
+    errors: settings.getErrors('enableDevLogging'),
+    disabled: overrides.enableDevLogging is defined,
+}) }}
+{{ overrideWarning('enableDevLogging', overrides) }}
