@@ -66,13 +66,6 @@ class Settings extends Model
     public array $cssVariables = [];
 
     /**
-     * Whether to log merge conflict resolutions in devMode.
-     *
-     * @var bool
-     */
-    public bool $enableDevLogging = true;
-
-    /**
      * Maximum number of merge results to cache in memory.
      *
      * @var int
@@ -131,7 +124,7 @@ class Settings extends Model
         $rules[] = [['tailwindVersion'], 'required'];
         $rules[] = [['tailwindVersion'], 'in', 'range' => ['auto', '3', '4']];
         $rules[] = [['buildchainPath', 'cssPath'], 'string'];
-        $rules[] = [['enableDevLogging', 'autoInject'], 'boolean'];
+        $rules[] = [['autoInject'], 'boolean'];
         $rules[] = [['cacheSize'], 'integer', 'min' => 0, 'max' => 10000];
         $rules[] = [['prefix'], 'string'];
         $rules[] = [['autoInjectAttributes'], function(string $attribute): void {

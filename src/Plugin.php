@@ -13,12 +13,15 @@ use craft\base\Plugin as BasePlugin;
 use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
+use craftpulse\tailwind\debug\TailwindPanel;
 use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\services\TailwindService;
 use craftpulse\tailwind\services\VersionDetector;
 use craftpulse\tailwind\twig\TailwindTwigExtension;
 use craftpulse\tailwind\variables\TailwindVariable;
+use yii\base\Application as BaseApplication;
 use yii\base\Event;
+use yii\debug\Module as DebugModule;
 
 /**
  * Tailwind plugin for Craft CMS 5.
@@ -79,10 +82,13 @@ class Plugin extends BasePlugin
         parent::init();
         self::$plugin = $this;
 
+        Craft::setAlias('@craftpulse/tailwind', __DIR__);
+
         $this->_registerServices();
         $this->_registerTwigExtension();
         $this->_registerVariables();
         $this->_registerAutoInject();
+        $this->_registerDebugPanel();
     }
 
     // =========================================================================
@@ -237,6 +243,41 @@ class Plugin extends BasePlugin
                     $settings->autoInjectAttributes,
                     'craftpulse-tailwind-css-variables',
                 );
+            },
+        );
+    }
+
+    /**
+     * Registers the Tailwind debug toolbar panel.
+     *
+     * The panel surfaces every merge operation from the current request,
+     * including the originating template. Registration happens on
+     * `Application::EVENT_BEFORE_REQUEST` so the debug module is available.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    private function _registerDebugPanel(): void
+    {
+        Event::on(
+            Application::class,
+            BaseApplication::EVENT_BEFORE_REQUEST,
+            static function(): void {
+                /** @var ?DebugModule $debugModule */
+                $debugModule = Craft::$app->getModule('debug');
+
+                if (!$debugModule instanceof DebugModule) {
+                    return;
+                }
+
+                $debugModule->panels['tailwind'] = new TailwindPanel([
+                    'id' => 'tailwind',
+                    'module' => $debugModule,
+                ]);
+
+                self::$plugin?->tailwind->enableRecording();
             },
         );
     }
