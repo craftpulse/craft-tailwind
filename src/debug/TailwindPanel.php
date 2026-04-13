@@ -85,6 +85,10 @@ class TailwindPanel extends Panel
     /**
      * @inheritdoc
      *
+     * Returns aggregated merge data for persistence. Each merge entry
+     * includes: input, output, resolved (bool), cacheHit (bool),
+     * template (?string), line (?int), count (int).
+     *
      * @return array{merges: array<int, array<string, mixed>>, totalCalls: int, resolved: int, cacheHits: int, cacheSize: int, version: string}
      *
      * @author CraftPulse

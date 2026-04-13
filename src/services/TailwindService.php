@@ -62,11 +62,9 @@ class TailwindService extends Component
     /**
      * Recorded merge operations for the debug panel.
      *
-     * Each entry: ['input' => string, 'output' => string,
-     * 'resolved' => bool, 'cacheHit' => bool, 'template' => ?string, 'count' => int].
-     * Keyed by the merge input string for deduplication.
+     * Each entry is keyed by the merge input string for deduplication.
      *
-     * @var array<string, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, count: int}>
+     * @var array<string, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, line: ?int, count: int}>
      */
     private array $_merges = [];
 
@@ -150,9 +148,9 @@ class TailwindService extends Component
      *
      * Consumed by the debug toolbar panel. Each entry describes a unique
      * merge input, including how many times it was called, whether it
-     * resolved a conflict, and which template it ran from.
+     * resolved a conflict, and the originating template and line.
      *
-     * @return array<int, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, count: int}>
+     * @return array<int, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, line: ?int, count: int}>
      *
      * @author CraftPulse
      * @since 1.0.0
@@ -335,37 +333,73 @@ class TailwindService extends Component
             return;
         }
 
+        [$template, $line] = $this->_resolveCallSite();
+
         $this->_merges[$input] = [
             'input' => $input,
             'output' => $output,
             'resolved' => $input !== $output,
             'cacheHit' => $cacheHit,
-            'template' => $this->_resolveCallingTemplate(),
+            'template' => $template,
+            'line' => $line,
             'count' => 1,
         ];
     }
 
     /**
-     * Walks the current backtrace looking for the most recent Twig template frame.
+     * Resolves the calling Twig template name and source line via the backtrace.
      *
-     * @return ?string The template name, or null if no template is on the stack.
+     * Uses the same technique as `Twig\Error\Error::guessTemplateInfo()`:
+     * finds the nearest Twig template on the stack, takes its compiled PHP
+     * file path, then walks the trace for a frame whose file matches and uses
+     * the template's `getDebugInfo()` map to translate the compiled PHP line
+     * into the original template line.
+     *
+     * @return array{0: ?string, 1: ?int} Tuple of template name and source line.
      *
      * @author CraftPulse
      * @since 1.0.0
      */
-    private function _resolveCallingTemplate(): ?string
+    private function _resolveCallSite(): array
     {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 25);
+        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS | DEBUG_BACKTRACE_PROVIDE_OBJECT, 25);
 
+        $template = null;
         foreach ($trace as $frame) {
             $object = $frame['object'] ?? null;
 
             if ($object instanceof Template) {
-                return $object->getTemplateName();
+                $template = $object;
+                break;
             }
         }
 
-        return null;
+        if ($template === null) {
+            return [null, null];
+        }
+
+        $compiledFile = (new \ReflectionObject($template))->getFileName();
+        $name = $template->getTemplateName();
+
+        if ($compiledFile === false) {
+            return [$name, null];
+        }
+
+        foreach ($trace as $frame) {
+            if (!isset($frame['file'], $frame['line']) || $frame['file'] !== $compiledFile) {
+                continue;
+            }
+
+            foreach ($template->getDebugInfo() as $phpLine => $twigLine) {
+                if ($phpLine <= $frame['line']) {
+                    return [$name, $twigLine];
+                }
+            }
+
+            break;
+        }
+
+        return [$name, null];
     }
 
     /**
