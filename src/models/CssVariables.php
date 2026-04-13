@@ -18,7 +18,7 @@ use Stringable;
  * Variable names without a `--` prefix are automatically prefixed.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class CssVariables implements Stringable
 {
@@ -60,7 +60,7 @@ class CssVariables implements Stringable
      * @param array<string, string> $variables CSS custom properties as key-value pairs.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function __construct(array $variables)
     {
@@ -73,7 +73,7 @@ class CssVariables implements Stringable
      * @return string The CSS string, or empty string if no variables.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function __toString(): string
     {
@@ -88,7 +88,7 @@ class CssVariables implements Stringable
      * @return string The CSS string, or empty string if no variables.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function asCss(): string
     {
@@ -115,7 +115,7 @@ class CssVariables implements Stringable
      * @return ?string The variable value, or null if not found.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function get(string $name): ?string
     {
@@ -134,7 +134,7 @@ class CssVariables implements Stringable
      * @return bool Whether the variable exists.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function has(string $name): bool
     {
@@ -149,7 +149,7 @@ class CssVariables implements Stringable
      * @return array<string, string> All normalized CSS variable key-value pairs.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function all(): array
     {
@@ -162,7 +162,7 @@ class CssVariables implements Stringable
      * @return bool Whether there are no variables.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function isEmpty(): bool
     {
@@ -185,7 +185,7 @@ class CssVariables implements Stringable
      * @return array<string, string> The normalized, safe variables.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _normalize(array $variables): array
     {
@@ -219,7 +219,7 @@ class CssVariables implements Stringable
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _logUnsafeValue(string $name, string $reason): void
     {

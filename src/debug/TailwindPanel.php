@@ -20,7 +20,7 @@ use yii\debug\Panel;
  * number of repeated calls with identical input.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class TailwindPanel extends Panel
 {
@@ -43,7 +43,7 @@ class TailwindPanel extends Panel
      * @return string The panel name shown in the debug toolbar.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getName(): string
     {
@@ -56,7 +56,7 @@ class TailwindPanel extends Panel
      * @return string The rendered summary HTML for the toolbar pill.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getSummary(): string
     {
@@ -72,7 +72,7 @@ class TailwindPanel extends Panel
      * @return string The rendered detail HTML for the expanded panel.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getDetail(): string
     {
@@ -92,7 +92,7 @@ class TailwindPanel extends Panel
      * @return array{merges: array<int, array<string, mixed>>, totalCalls: int, resolved: int, cacheHits: int, cacheSize: int, version: string}
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function save(): array
     {

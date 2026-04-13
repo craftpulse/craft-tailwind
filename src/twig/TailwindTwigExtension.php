@@ -19,7 +19,7 @@ use Twig\TwigFunction;
  * All other functionality is accessible via `craft.tailwind` variables.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class TailwindTwigExtension extends AbstractExtension
 {
@@ -33,7 +33,7 @@ class TailwindTwigExtension extends AbstractExtension
      * @return string The extension name.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getName(): string
     {
@@ -46,7 +46,7 @@ class TailwindTwigExtension extends AbstractExtension
      * @return array<int, TwigFilter> The registered Twig filters.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getFilters(): array
     {
@@ -61,7 +61,7 @@ class TailwindTwigExtension extends AbstractExtension
      * @return array<int, TwigFunction> The registered Twig functions.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getFunctions(): array
     {
@@ -79,7 +79,7 @@ class TailwindTwigExtension extends AbstractExtension
      * @return string The merged CSS class string.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function mergeFilter(string $base, string ...$additional): string
     {

@@ -13,7 +13,7 @@ use PHPUnit\Framework\TestCase as BaseTestCase;
  * Base test case for the Tailwind plugin tests.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class TestCase extends BaseTestCase
 {

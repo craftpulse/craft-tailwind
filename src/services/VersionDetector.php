@@ -21,7 +21,7 @@ use craft\base\Component;
  * Results are cached for the request lifecycle.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class VersionDetector extends Component
 {
@@ -68,7 +68,7 @@ class VersionDetector extends Component
      * @return string The detected version: '3' or '4'.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function detect(
         string $configuredVersion = 'auto',
@@ -121,7 +121,7 @@ class VersionDetector extends Component
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function clearCache(): void
     {
@@ -138,7 +138,7 @@ class VersionDetector extends Component
      * @return string The absolute path to the project root.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _getProjectRoot(): string
     {
@@ -166,7 +166,7 @@ class VersionDetector extends Component
      * @return ?string '4' if v4 signals found, null otherwise.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _detectFromCssFiles(string $searchPath): ?string
     {
@@ -210,7 +210,7 @@ class VersionDetector extends Component
      * @return ?string '3' if config files found, null otherwise.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _detectFromConfigFiles(string $searchPath): ?string
     {
@@ -242,7 +242,7 @@ class VersionDetector extends Component
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _logDetectionFallback(): void
     {
