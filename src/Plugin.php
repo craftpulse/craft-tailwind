@@ -58,7 +58,7 @@ class Plugin extends BasePlugin
     /**
      * @var bool Whether the plugin has a settings page in the control panel.
      */
-    public bool $hasCpSettings = false;
+    public bool $hasCpSettings = true;
 
     // =========================================================================
     // = Public Methods
@@ -97,6 +97,36 @@ class Plugin extends BasePlugin
     protected function createSettingsModel(): ?Model
     {
         return new Settings();
+    }
+
+    /**
+     * Returns the rendered HTML for the plugin settings page.
+     *
+     * @return ?string The settings HTML.
+     *
+     * @throws \Twig\Error\LoaderError
+     * @throws \Twig\Error\RuntimeError
+     * @throws \Twig\Error\SyntaxError
+     * @throws \yii\base\Exception
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    protected function settingsHtml(): ?string
+    {
+        /** @var \craft\web\View $view */
+        $view = Craft::$app->getView();
+
+        /** @var \craft\web\Application $app */
+        $app = Craft::$app;
+
+        return $view->renderTemplate(
+            'tailwind/settings',
+            [
+                'settings' => $this->getSettings(),
+                'overrides' => $app->getConfig()->getConfigFromFile('tailwind'),
+            ],
+        );
     }
 
     // =========================================================================

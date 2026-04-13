@@ -10,6 +10,7 @@ namespace craftpulse\tailwind\services;
 use Craft;
 use craft\base\Component;
 use craftpulse\tailwind\models\ClassList;
+use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\Plugin;
 use TailwindMerge\TailwindMerge as TailwindMergeV3;
 use TalesFromADev\TailwindMerge\TailwindMerge as TailwindMergeV4;
@@ -133,7 +134,7 @@ class TailwindService extends Component
     /**
      * Returns the detected Tailwind version string.
      *
-     * @return string The version: '3', '4', or 'unknown'.
+     * @return string The version: '3' or '4'.
      *
      * @author CraftPulse
      * @since 1.0.0
@@ -141,9 +142,27 @@ class TailwindService extends Component
     public function getVersion(): string
     {
         $settings = Plugin::$plugin?->getSettings();
-        $configuredVersion = $settings->tailwindVersion ?? 'auto';
 
-        return $this->_getVersionDetector()->detect($configuredVersion);
+        return $this->_getVersionDetector()->detect(
+            $settings->tailwindVersion ?? 'auto',
+            $settings->buildchainPath ?? null,
+            $settings->cssPath ?? null,
+        );
+    }
+
+    /**
+     * Returns the configured CSS variables as a CssVariables instance.
+     *
+     * @return CssVariables The CSS variables container.
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    public function cssVariables(): CssVariables
+    {
+        $settings = Plugin::$plugin?->getSettings();
+
+        return new CssVariables($settings->cssVariables ?? []);
     }
 
     // =========================================================================

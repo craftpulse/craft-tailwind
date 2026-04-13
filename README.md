@@ -1,19 +1,59 @@
 # Tailwind for Craft CMS
 
-Tailwind CSS class merging and named-slot class builder for Craft CMS 5.
+Server-side Tailwind CSS class merging for Craft CMS 5 templates. Resolves conflicting utility classes, organizes styles into named slots, and injects CSS custom properties -- all without client-side JavaScript.
 
-## Features
+## What it solves
 
-- **Class merging** — resolves conflicting Tailwind utilities server-side (last wins per CSS property)
-- **Named-slot class builder** — organize classes by concern (layout, color, font) with an immutable API
-- **Tailwind v3 + v4 support** — auto-detects your Tailwind version, or configure it explicitly
-- **LRU cache** — merge results are cached in memory for performance
-- **DevMode logging** — logs conflict resolutions when devMode is enabled
+### Component overrides without conflicts
 
-## Requirements
+A button component defines default colors. A page template wants to override just the color, but concatenating classes produces `bg-brand-accent bg-red-500` -- both classes render, the cascade picks a winner unpredictably, and the source is impossible to reason about.
 
-- Craft CMS 5.0 or later
-- PHP 8.2 or later
+With craft-tailwind, the merge engine understands which utilities conflict and keeps only the last one per CSS property:
+
+```twig
+{# _components/button.twig #}
+{% set classes = craft.tailwind.classes({
+    layout: 'inline-flex items-center gap-2',
+    color: 'bg-brand-accent text-white',
+    radius: 'rounded-sm',
+    spacing: 'py-2 px-4',
+}) %}
+
+{# Override just the color slot -- layout, radius, spacing stay intact #}
+{% set classes = classes.override({ color: 'bg-red-600 text-white' }) %}
+
+<button class="{{ classes }}">Submit</button>
+{# Output: inline-flex items-center gap-2 bg-red-600 text-white rounded-sm py-2 px-4 #}
+```
+
+### Dynamic colors without safelisting
+
+A CMS field lets editors pick a brand color. Tailwind tree-shakes unused classes at build time, so writing `bg-{{ color }}` produces nothing -- the class never made it into the build.
+
+CSS custom properties sidestep this entirely. Define your palette once in plugin settings, reference the variables in your templates with arbitrary value syntax, and swap values at runtime:
+
+```twig
+{# Inject CSS variables into the page head #}
+{{ craft.tailwind.cssVariables.asStyleTag()|raw }}
+
+{# Use arbitrary value syntax -- these classes ARE in the build #}
+<div class="bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]">
+    Editor-chosen colors, no safelisting required.
+</div>
+```
+
+### Form field modifiers
+
+A form input has default styling. Error state needs a red border. Disabled state needs muted colors. Without merge, layering modifier classes means manually tracking which base classes to remove:
+
+```twig
+{% set base = 'border border-gray-300 rounded-md px-3 py-2 text-sm' %}
+{% set error = 'border-red-500 ring-1 ring-red-500' %}
+{% set disabled = 'bg-gray-100 text-gray-400 cursor-not-allowed' %}
+
+{# Merge resolves border-gray-300 vs border-red-500 automatically #}
+<input class="{{ base|twmerge(hasErrors ? error : '', isDisabled ? disabled : '') }}" />
+```
 
 ## Installation
 
@@ -21,38 +61,95 @@ Tailwind CSS class merging and named-slot class builder for Craft CMS 5.
 composer require craftpulse/craft-tailwind
 ```
 
-Then install the plugin in the Craft control panel under Settings > Plugins, or via the CLI:
+Then install the plugin via the control panel under Settings > Plugins, or from the command line:
 
 ```bash
 php craft plugin/install tailwind
 ```
 
-## Usage
+## Configuration
 
-### Class Merging
+Settings can be managed through the control panel (Settings > Plugins > Tailwind) or via a config file. File-based configuration takes precedence over CP settings.
 
-Merge conflicting Tailwind utilities — the last class per CSS property wins:
+### Config file
 
-```twig
-{# Filter form #}
-{{ 'px-4 bg-red-500'|twmerge('bg-blue-500 mt-4') }}
-{# → 'px-4 bg-blue-500 mt-4' #}
+Create `config/tailwind.php`:
 
-{# Function form #}
-{{ twmerge('px-4 bg-red-500', 'bg-blue-500 mt-4') }}
-{# → 'px-4 bg-blue-500 mt-4' #}
+```php
+<?php
 
-{# Variable form #}
-{{ craft.tailwind.merge('px-4 bg-red-500', 'bg-blue-500 mt-4') }}
-{# → 'px-4 bg-blue-500 mt-4' #}
+return [
+    // 'auto' | '3' | '4'
+    'tailwindVersion' => 'auto',
+
+    // Directory containing tailwind.config.* (v3 detection)
+    'buildchainPath' => null,
+
+    // Directory containing CSS entry file (v4 detection)
+    'cssPath' => null,
+
+    // CSS custom properties injected as :root variables
+    'cssVariables' => [
+        '--color-brand-primary' => '#3490dc',
+        '--color-brand-on-primary' => '#ffffff',
+    ],
+
+    // Log merge conflict resolutions in devMode
+    'enableDevLogging' => true,
+
+    // LRU cache size for merge results (0-10000)
+    'cacheSize' => 500,
+
+    // Tailwind class prefix, matching your tailwind.config.js prefix option
+    'prefix' => '',
+];
 ```
 
-### Named-Slot Class Builder
+When a setting is defined in both the config file and the CP, the config file value wins. The CP settings page shows a warning on each overridden field.
 
-Build class strings from named concerns. Each slot represents a style responsibility — overriding a slot replaces it entirely, preventing structural conflicts:
+### Multi-environment configuration
+
+The config file supports Craft's standard multi-environment pattern:
+
+```php
+<?php
+
+return [
+    '*' => [
+        'tailwindVersion' => 'auto',
+        'enableDevLogging' => false,
+    ],
+    'dev' => [
+        'enableDevLogging' => true,
+    ],
+];
+```
+
+## Usage
+
+### Class merging
+
+The `|twmerge` filter resolves conflicting Tailwind utilities. The last class per CSS property group wins:
 
 ```twig
-{% set classes = craft.tailwind.classes({
+{{ 'px-4 bg-red-500'|twmerge('bg-blue-500 mt-4') }}
+{# Result: px-4 bg-blue-500 mt-4 #}
+```
+
+You can also merge via the template variable:
+
+```twig
+{{ craft.tailwind.merge('px-4 bg-red-500', 'bg-blue-500 mt-4') }}
+```
+
+Both forms accept multiple arguments. Each argument is a space-separated class string.
+
+### Named-slot ClassList
+
+When a component has many style concerns, a flat class string becomes hard to override selectively. The `ClassList` object splits classes into named slots, each representing a single responsibility:
+
+```twig
+{% set btn = craft.tailwind.classes({
     layout: 'inline-flex items-center group w-fit',
     color: 'bg-brand-accent text-brand-on-accent',
     font: 'font-heading font-bold text-base',
@@ -62,40 +159,31 @@ Build class strings from named concerns. Each slot represents a style responsibi
     focus: 'focus:ring-2 focus:ring-brand-focus focus:ring-offset-1 focus:outline-none',
 }) %}
 
-{# Auto-casts to merged string #}
-<button class="{{ classes }}">Click me</button>
-
-{# Get a single slot #}
-{{ classes.get('color') }}
-
-{# Override a slot — returns new immutable instance #}
-{{ classes.override({ color: 'bg-red-600 text-white' }) }}
-
-{# Add a new slot #}
-{{ classes.extend({ border: 'border border-brand-muted' }) }}
-
-{# Remove slots #}
-{{ classes.without('hover', 'focus') }}
-
-{# Merge additional utilities on top #}
-{{ classes.merge('mt-8') }}
+{# Renders all slots merged into a single class string #}
+<button class="{{ btn }}">Click me</button>
 ```
 
-The `ClassList` object is immutable — all methods return new instances:
+The `ClassList` object is immutable. Every mutation returns a new instance:
 
-| Method | Returns | Description |
-|--------|---------|-------------|
-| `__toString()` | `string` | All slots merged into a single class string |
-| `get(slot)` | `?string` | Single slot value |
-| `override(slots)` | `ClassList` | New instance with replaced slots |
-| `extend(slots)` | `ClassList` | New instance with added/extended slots |
-| `without(slot, ...)` | `ClassList` | New instance without named slots |
-| `merge(additional)` | `string` | All slots + additional merged into a string |
-| `toArray()` | `array` | Named slots as associative array |
+```twig
+{# Replace an entire slot #}
+{% set danger = btn.override({ color: 'bg-red-600 text-white' }) %}
 
-### Tag Integration
+{# Append classes to an existing slot #}
+{% set bordered = btn.extend({ border: 'border-2 border-brand-muted' }) %}
 
-Works with Craft's native `{% tag %}` seamlessly:
+{# Remove slots entirely #}
+{% set minimal = btn.without('hover', 'focus') %}
+
+{# Read a single slot #}
+{{ btn.get('color') }}
+{# Result: bg-brand-accent text-brand-on-accent #}
+
+{# Merge additional utilities on top of all slots #}
+{{ btn.merge('mt-8 shadow-lg') }}
+```
+
+Works naturally with Craft's `{% tag %}` helper:
 
 ```twig
 {% tag 'a' with {
@@ -103,61 +191,103 @@ Works with Craft's native `{% tag %}` seamlessly:
         layout: 'inline-flex items-center',
         color: 'bg-brand-accent text-brand-on-accent',
     }),
-    href: url,
+    href: entry.url,
 } %}
-    Click me
+    {{ entry.title }}
 {% endtag %}
 ```
 
-### Version Detection
+### CSS variables
 
-The plugin auto-detects your Tailwind version:
-
-1. Checks for `tailwind.config.js` / `.ts` / `.cjs` / `.mjs` (project root or `buildchain/`) -> v3
-2. Checks for `@theme` directives in `src/css/*.css` -> v4
-3. Parses `tailwindcss` version from `package.json` -> semver major
-4. Falls back to plugin settings
+Define CSS custom properties in plugin settings (or `config/tailwind.php`), then inject them into your templates. This is useful for editor-controlled design tokens that need to work with Tailwind's arbitrary value syntax.
 
 ```twig
-{{ craft.tailwind.version }} {# '3', '4', or 'unknown' #}
+{# In your layout's <head> #}
+{{ craft.tailwind.cssVariables.asStyleTag()|raw }}
+{# Renders: <style>:root { --color-brand-primary: #3490dc; ... }</style> #}
 ```
 
-## Configuration
+Query individual variables in templates:
 
-Create a `config/tailwind.php` file to override defaults:
-
-```php
-<?php
-
-return [
-    // 'auto' | '3' | '4'
-    'tailwindVersion' => 'auto',
-
-    // Log merge conflict resolutions in devMode
-    'enableDevLogging' => true,
-
-    // LRU cache size for merge results (0-10000)
-    'cacheSize' => 500,
-
-    // Tailwind class prefix (e.g., 'tw-')
-    'prefix' => '',
-];
+```twig
+{% if craft.tailwind.cssVariables.has('color-brand-primary') %}
+    {{ craft.tailwind.cssVariables.get('color-brand-primary') }}
+{% endif %}
 ```
 
-## Twig API Reference
+The `CssVariables` object sanitizes values to prevent CSS injection. Values containing characters outside the safe set (letters, digits, hyphens, underscores, dots, hashes, commas, parentheses, percent signs, slashes, spaces, and quotes) are silently dropped. In devMode, dropped values are logged as warnings.
 
-| API | Type | Description |
-|-----|------|-------------|
-| `'classes'\|twmerge('more')` | Filter | Merge classes, last wins per property |
-| `twmerge('a', 'b', ...)` | Function | Merge multiple class strings |
-| `twclasses({ slot: 'classes' })` | Function | Named-slot class builder |
-| `craft.tailwind.merge(...)` | Variable | Merge class strings |
-| `craft.tailwind.classes({...})` | Variable | Named-slot class builder |
-| `craft.tailwind.version` | Variable | Detected Tailwind version |
+Variable names are auto-prefixed with `--` if the prefix is missing, so both `color-brand` and `--color-brand` resolve to the same property.
+
+### Version detection
+
+The plugin auto-detects whether your project uses Tailwind v3 or v4 and selects the correct merge engine. Detection follows this priority:
+
+1. **CSS signals** -- scans the CSS path for `@import "tailwindcss"` or `@theme` directives (definitive v4 indicators)
+2. **Config files** -- looks for `tailwind.config.{js,ts,cjs,mjs}` in the buildchain path (v3 indicator)
+3. **Fallback** -- defaults to v4 with a devMode warning
+
+Set `buildchainPath` and `cssPath` in settings to point detection at the right directories. When unset, both default to the project root.
+
+```twig
+{{ craft.tailwind.version }}
+{# Result: '3' or '4' #}
+```
+
+To skip detection entirely, set `tailwindVersion` to `'3'` or `'4'` explicitly.
+
+### DevMode logging
+
+When `enableDevLogging` is true and Craft is running in devMode, the plugin logs every merge where the output differs from the input. This helps identify conflicting utilities during development. Check `storage/logs/web.log` for entries tagged `[tailwind]`.
+
+## Typography plugin compatibility
+
+The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box. Prose modifier classes like `prose-sm`, `prose-lg`, and `prose-invert` resolve correctly through the merge engine. No special configuration is needed.
+
+## API reference
+
+### Twig filter
+
+| Signature | Description |
+|-----------|-------------|
+| `'classes'\|twmerge('more classes', ...)` | Merge class strings, last wins per CSS property |
+
+### Template variables (`craft.tailwind`)
+
+| Property / Method | Returns | Description |
+|-------------------|---------|-------------|
+| `.merge('a', 'b', ...)` | `string` | Merge multiple class strings |
+| `.classes({ slot: 'classes' })` | `ClassList` | Named-slot class builder |
+| `.version` | `string` | Detected Tailwind version (`'3'` or `'4'`) |
+| `.cssVariables` | `CssVariables` | CSS custom properties container |
+
+### ClassList methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `__toString()` | `string` | All slots merged into a single class string |
+| `.get(slot)` | `?string` | Value of a single slot |
+| `.override({ slot: '...' })` | `ClassList` | New instance with replaced slots |
+| `.extend({ slot: '...' })` | `ClassList` | New instance with appended slot values |
+| `.without('slot', ...)` | `ClassList` | New instance without named slots |
+| `.merge('additional')` | `string` | All slots + additional merged to a string |
+| `.toArray()` | `array` | Named slots as an associative array |
+
+### CssVariables methods
+
+| Method | Returns | Description |
+|--------|---------|-------------|
+| `__toString()` | `string` | `:root { ... }` CSS block |
+| `.asCss()` | `string` | `:root { ... }` CSS block |
+| `.asStyleTag()` | `string` | `<style>:root { ... }</style>` HTML |
+| `.get(name)` | `?string` | Value of a single variable |
+| `.has(name)` | `bool` | Whether a variable exists |
+| `.all()` | `array` | All variables as key-value pairs |
+| `.isEmpty()` | `bool` | Whether the collection is empty |
 
 ## Credits
 
-This plugin wraps two excellent PHP libraries:
+This plugin wraps two PHP merge libraries:
 
 - [gehrisandro/tailwind-merge-php](https://github.com/gehrisandro/tailwind-merge-php) (Tailwind v3)
 - [tales-from-a-dev/tailwind-merge-php](https://github.com/tales-from-a-dev/tailwind-merge-php) (Tailwind v4)

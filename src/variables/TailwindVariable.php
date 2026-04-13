@@ -8,6 +8,7 @@
 namespace craftpulse\tailwind\variables;
 
 use craftpulse\tailwind\models\ClassList;
+use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\Plugin;
 
 /**
@@ -64,13 +65,28 @@ class TailwindVariable
      *
      * Usage: `{{ craft.tailwind.version }}`
      *
-     * @return string The version: '3', '4', or 'unknown'.
+     * @return string The version: '3' or '4'.
      *
      * @author CraftPulse
      * @since 1.0.0
      */
     public function getVersion(): string
     {
-        return Plugin::$plugin?->tailwind->getVersion() ?? 'unknown';
+        return Plugin::$plugin?->tailwind->getVersion() ?? '4';
+    }
+
+    /**
+     * Returns the configured CSS variables container.
+     *
+     * Usage: `{{ craft.tailwind.cssVariables.asStyleTag() }}`
+     *
+     * @return CssVariables The CSS variables container.
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    public function getCssVariables(): CssVariables
+    {
+        return Plugin::$plugin?->tailwind->cssVariables() ?? new CssVariables([]);
     }
 }
