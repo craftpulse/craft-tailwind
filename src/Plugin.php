@@ -10,7 +10,9 @@ namespace craftpulse\tailwind;
 use Craft;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
+use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
+use craft\web\View;
 use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\services\TailwindService;
 use craftpulse\tailwind\services\VersionDetector;
@@ -80,6 +82,7 @@ class Plugin extends BasePlugin
         $this->_registerServices();
         $this->_registerTwigExtension();
         $this->_registerVariables();
+        $this->_registerAutoInject();
     }
 
     // =========================================================================
@@ -183,6 +186,57 @@ class Plugin extends BasePlugin
                 /** @var CraftVariable $variable */
                 $variable = $event->sender;
                 $variable->set('tailwind', TailwindVariable::class);
+            },
+        );
+    }
+
+    /**
+     * Auto-injects CSS variables into the page `<head>` when enabled in settings.
+     *
+     * Hooks into the view's render-page event so the CSS is registered
+     * for every site template render. Console requests and CP requests
+     * are skipped.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    private function _registerAutoInject(): void
+    {
+        $settings = $this->getSettings();
+
+        if (!$settings instanceof Settings || !$settings->autoInject) {
+            return;
+        }
+
+        if (!Craft::$app instanceof Application) {
+            return;
+        }
+
+        $request = Craft::$app->getRequest();
+
+        if ($request->getIsConsoleRequest() || $request->getIsCpRequest()) {
+            return;
+        }
+
+        Event::on(
+            View::class,
+            View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
+            function() use ($settings): void {
+                $variables = self::$plugin?->tailwind->cssVariables();
+
+                if ($variables === null || $variables->isEmpty()) {
+                    return;
+                }
+
+                /** @var View $view */
+                $view = Craft::$app->getView();
+                $view->registerCss(
+                    $variables->asCss(),
+                    $settings->autoInjectAttributes,
+                    'craftpulse-tailwind-css-variables',
+                );
             },
         );
     }

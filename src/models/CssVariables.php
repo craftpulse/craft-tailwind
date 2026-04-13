@@ -106,25 +106,6 @@ class CssVariables implements Stringable
     }
 
     /**
-     * Returns the variables wrapped in a `<style>` tag.
-     *
-     * @return string The style tag HTML, or empty string if no variables.
-     *
-     * @author CraftPulse
-     * @since 1.0.0
-     */
-    public function asStyleTag(): string
-    {
-        $css = $this->asCss();
-
-        if ($css === '') {
-            return '';
-        }
-
-        return '<style>' . $css . '</style>';
-    }
-
-    /**
      * Gets the value of a single CSS variable by name.
      *
      * The name is auto-prefixed with `--` if missing.

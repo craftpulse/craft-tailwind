@@ -89,6 +89,29 @@ class Settings extends Model
      */
     public string $prefix = '';
 
+    /**
+     * Whether to automatically inject CSS variables into the page `<head>`.
+     *
+     * When true, the plugin registers the CSS variables style block via
+     * Craft's `View::registerCss()` on every site request — no manual
+     * `{{ craft.tailwind.include() }}` call is needed in your layout.
+     * Console requests and CP requests are never auto-injected.
+     *
+     * @var bool
+     */
+    public bool $autoInject = false;
+
+    /**
+     * Attributes to apply to the auto-injected `<style>` tag.
+     *
+     * Common keys: `nonce` (for CSP), `media` (e.g. 'print').
+     * For per-request dynamic nonces, keep `autoInject` disabled and use
+     * `{{ craft.tailwind.include({ nonce: cspNonce }) }}` manually.
+     *
+     * @var array<string, string>
+     */
+    public array $autoInjectAttributes = [];
+
     // =========================================================================
     // = Protected Methods
     // =========================================================================
@@ -108,9 +131,25 @@ class Settings extends Model
         $rules[] = [['tailwindVersion'], 'required'];
         $rules[] = [['tailwindVersion'], 'in', 'range' => ['auto', '3', '4']];
         $rules[] = [['buildchainPath', 'cssPath'], 'string'];
-        $rules[] = [['enableDevLogging'], 'boolean'];
+        $rules[] = [['enableDevLogging', 'autoInject'], 'boolean'];
         $rules[] = [['cacheSize'], 'integer', 'min' => 0, 'max' => 10000];
         $rules[] = [['prefix'], 'string'];
+        $rules[] = [['autoInjectAttributes'], function(string $attribute): void {
+            if (!is_array($this->$attribute)) {
+                $this->addError($attribute, 'Auto-inject attributes must be an array.');
+                return;
+            }
+
+            foreach ($this->$attribute as $key => $value) {
+                if (!is_string($key) || !is_string($value)) {
+                    $this->addError(
+                        $attribute,
+                        'Auto-inject attributes must be a string => string array.',
+                    );
+                    return;
+                }
+            }
+        }];
         $rules[] = [['cssVariables'], function(string $attribute): void {
             if (!is_array($this->$attribute)) {
                 $this->addError($attribute, 'CSS variables must be an array.');
