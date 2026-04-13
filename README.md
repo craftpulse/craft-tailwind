@@ -111,6 +111,12 @@ return [
 
 When a setting is defined in both the config file and the CP, the config file value wins. The CP settings page shows a warning on each overridden field.
 
+### About the `cacheSize` setting
+
+The merge engine is called every time you use `|twmerge` or `craft.tailwind.merge()`. To avoid re-parsing the same class strings over and over within a single request, results are kept in an in-memory **LRU cache** (Least Recently Used). When the cache fills up, the entry that hasn't been used for the longest gets evicted to make room — so "hot" class strings (e.g. your main button's classes) stay resident.
+
+The cache is per-request: it lives only for the duration of one PHP process. You don't need to think about invalidation. Set `cacheSize` to `0` to disable caching entirely (useful when debugging a merge).
+
 ### Multi-environment configuration
 
 The config file supports Craft's standard multi-environment pattern:
