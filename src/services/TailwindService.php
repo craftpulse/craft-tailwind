@@ -7,20 +7,20 @@
 
 namespace craftpulse\tailwind\services;
 
-use Craft;
 use craft\base\Component;
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\Plugin;
 use TailwindMerge\TailwindMerge as TailwindMergeV3;
 use TalesFromADev\TailwindMerge\TailwindMerge as TailwindMergeV4;
+use Twig\Template;
 
 /**
  * Main Tailwind service providing class merging and named-slot class builders.
  *
  * Wraps the appropriate PHP merge engine based on the detected or configured
- * Tailwind version. Provides an LRU cache for merge results and integrates
- * with Craft's logging in devMode.
+ * Tailwind version. Provides an LRU cache for merge results and records
+ * every merge operation for the debug toolbar panel.
  *
  * @author CraftPulse
  * @since 1.0.0
@@ -59,6 +59,27 @@ class TailwindService extends Component
      */
     private array $_cacheKeys = [];
 
+    /**
+     * Recorded merge operations for the debug panel.
+     *
+     * Each entry: ['input' => string, 'output' => string,
+     * 'resolved' => bool, 'cacheHit' => bool, 'template' => ?string, 'count' => int].
+     * Keyed by the merge input string for deduplication.
+     *
+     * @var array<string, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, count: int}>
+     */
+    private array $_merges = [];
+
+    /**
+     * Whether to collect merge recordings for the debug panel.
+     *
+     * Enabled by the plugin only when the Yii debug module is loaded,
+     * so production requests don't pay for backtrace resolution.
+     *
+     * @var bool
+     */
+    private bool $_recording = false;
+
     // =========================================================================
     // = Public Methods
     // =========================================================================
@@ -88,26 +109,70 @@ class TailwindService extends Component
         // Check LRU cache
         $cacheKey = $input;
         if (isset($this->_cache[$cacheKey])) {
-            // Move to end (most recently used)
             $this->_touchCacheKey($cacheKey);
+            $result = $this->_cache[$cacheKey];
 
-            return $this->_cache[$cacheKey];
+            if ($this->_recording) {
+                $this->_recordMerge($input, $result, true);
+            }
+
+            return $result;
         }
 
         $result = $this->_getMerger()->merge($input);
-
-        // Log conflict resolution in devMode
-        if ($this->_shouldLog() && $result !== $input) {
-            Craft::info(
-                sprintf('Tailwind merge: "%s" → "%s"', $input, $result),
-                'tailwind',
-            );
-        }
-
-        // Store in LRU cache
         $this->_addToCache($cacheKey, $result);
 
+        if ($this->_recording) {
+            $this->_recordMerge($input, $result, false);
+        }
+
         return $result;
+    }
+
+    /**
+     * Enables merge recording for the debug panel.
+     *
+     * Called by the plugin when the debug module is detected. When disabled,
+     * merges run with no recording overhead.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    public function enableRecording(): void
+    {
+        $this->_recording = true;
+    }
+
+    /**
+     * Returns the recorded merge operations for the current request.
+     *
+     * Consumed by the debug toolbar panel. Each entry describes a unique
+     * merge input, including how many times it was called, whether it
+     * resolved a conflict, and which template it ran from.
+     *
+     * @return array<int, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, count: int}>
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    public function getRecordedMerges(): array
+    {
+        return array_values($this->_merges);
+    }
+
+    /**
+     * Returns the current cache entry count.
+     *
+     * @return int Number of entries currently held in the LRU cache.
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    public function getCacheCount(): int
+    {
+        return count($this->_cache);
     }
 
     /**
@@ -247,29 +312,60 @@ class TailwindService extends Component
     }
 
     /**
-     * Determines whether merge logging should be enabled.
+     * Records a merge operation for the debug panel.
      *
-     * Logging is enabled when both devMode is active and the plugin
-     * setting `enableDevLogging` is true.
+     * Deduplicates by input string, incrementing a call counter on repeat
+     * calls. Captures the calling template name by walking the backtrace
+     * for a `Twig\Template` frame.
      *
-     * @return bool Whether to log merge results.
+     * @param string $input The normalized merge input string.
+     * @param string $output The merge result.
+     * @param bool $cacheHit Whether the result came from the cache.
+     *
+     * @return void
      *
      * @author CraftPulse
      * @since 1.0.0
      */
-    private function _shouldLog(): bool
+    private function _recordMerge(string $input, string $output, bool $cacheHit): void
     {
-        /** @var \craft\web\Application $app */
-        $app = Craft::$app;
-        $config = $app->getConfig();
+        if (isset($this->_merges[$input])) {
+            $this->_merges[$input]['count']++;
 
-        if (!$config->getGeneral()->devMode) {
-            return false;
+            return;
         }
 
-        $settings = Plugin::$plugin?->getSettings();
+        $this->_merges[$input] = [
+            'input' => $input,
+            'output' => $output,
+            'resolved' => $input !== $output,
+            'cacheHit' => $cacheHit,
+            'template' => $this->_resolveCallingTemplate(),
+            'count' => 1,
+        ];
+    }
 
-        return $settings->enableDevLogging ?? false;
+    /**
+     * Walks the current backtrace looking for the most recent Twig template frame.
+     *
+     * @return ?string The template name, or null if no template is on the stack.
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    private function _resolveCallingTemplate(): ?string
+    {
+        $trace = debug_backtrace(DEBUG_BACKTRACE_PROVIDE_OBJECT, 25);
+
+        foreach ($trace as $frame) {
+            $object = $frame['object'] ?? null;
+
+            if ($object instanceof Template) {
+                return $object->getTemplateName();
+            }
+        }
+
+        return null;
     }
 
     /**

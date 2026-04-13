@@ -94,9 +94,6 @@ return [
         '--color-brand-on-primary' => '#ffffff',
     ],
 
-    // Log merge conflict resolutions in devMode
-    'enableDevLogging' => true,
-
     // LRU cache size for merge results (0-10000)
     'cacheSize' => 500,
 
@@ -124,10 +121,10 @@ The config file supports Craft's standard multi-environment pattern:
 return [
     '*' => [
         'tailwindVersion' => 'auto',
-        'enableDevLogging' => false,
+        'autoInject' => false,
     ],
     'dev' => [
-        'enableDevLogging' => true,
+        'autoInject' => true,
     ],
 ];
 ```
@@ -279,9 +276,17 @@ Set `buildchainPath` and `cssPath` in settings to point detection at the right d
 
 To skip detection entirely, set `tailwindVersion` to `'3'` or `'4'` explicitly.
 
-### DevMode logging
+### Debug toolbar panel
 
-When `enableDevLogging` is true and Craft is running in devMode, the plugin logs every merge where the output differs from the input. This helps identify conflicting utilities during development. Check `storage/logs/web.log` for entries tagged `[tailwind]`.
+When Craft's debug toolbar is enabled (devMode + a user with debug access), a **Tailwind** panel appears alongside the others. It records every merge operation during the current request and shows:
+
+- **Total calls / unique inputs** — how many times `merge()` or `|twmerge` ran, and how many distinct input strings were seen
+- **Cache stats** — hit count, hit rate, and current LRU entry count
+- **Per-merge detail** — the input, the resolved output, whether a conflict was actually resolved (vs passthrough), the call count, and **the template that ran the merge**
+
+Use it to answer questions like "why is `bg-red-500` not appearing on the page?" (find the merge input where it was overridden) or "is my cache actually helping?" (check the hit rate).
+
+The panel has no overhead outside of debug-enabled requests — data collection only runs when the debug module is loaded.
 
 ## Typography plugin compatibility
 

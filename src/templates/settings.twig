@@ -129,17 +129,6 @@
 }) }}
 {{ overrideWarning('cacheSize', overrides) }}
 
-{{ forms.lightswitchField({
-    label: 'Enable Dev Logging',
-    instructions: 'When enabled and devMode is active, the plugin logs merge conflict resolutions to help you debug class collisions.',
-    id: 'enableDevLogging',
-    name: 'enableDevLogging',
-    on: settings.enableDevLogging,
-    errors: settings.getErrors('enableDevLogging'),
-    disabled: overrides.enableDevLogging is defined,
-}) }}
-{{ overrideWarning('enableDevLogging', overrides) }}
-
 <hr>
 
 <h2>Auto-Inject</h2>
