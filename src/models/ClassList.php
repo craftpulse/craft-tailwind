@@ -18,7 +18,7 @@ use Stringable;
  * All mutating methods return new instances — the original is never modified.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class ClassList implements Stringable
 {
@@ -51,7 +51,7 @@ class ClassList implements Stringable
      * @param Closure $merger Callable that accepts variadic strings and returns a merged string.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function __construct(array $slots, Closure $merger)
     {
@@ -65,7 +65,7 @@ class ClassList implements Stringable
      * @return string The merged CSS class string.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function __toString(): string
     {
@@ -82,7 +82,7 @@ class ClassList implements Stringable
      * @return ?string The class string for the slot, or null if not found.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function get(string $slot): ?string
     {
@@ -100,7 +100,7 @@ class ClassList implements Stringable
      * @return self A new ClassList instance with overridden slots.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function override(array $slots): self
     {
@@ -121,7 +121,7 @@ class ClassList implements Stringable
      * @return self A new ClassList instance with extended slots.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function extend(array $slots): self
     {
@@ -146,7 +146,7 @@ class ClassList implements Stringable
      * @return self A new ClassList instance without the specified slots.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function without(string ...$slots): self
     {
@@ -166,7 +166,7 @@ class ClassList implements Stringable
      * @return string The fully merged CSS class string.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function merge(string $additional): string
     {
@@ -181,7 +181,7 @@ class ClassList implements Stringable
      * @return array<string, string> The slot name-value pairs.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function toArray(): array
     {

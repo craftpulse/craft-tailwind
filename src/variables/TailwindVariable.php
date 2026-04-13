@@ -21,7 +21,7 @@ use Twig\Markup;
  * in Twig templates.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class TailwindVariable
 {
@@ -39,7 +39,7 @@ class TailwindVariable
      * @return string The merged CSS class string.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function merge(string ...$classes): string
     {
@@ -56,7 +56,7 @@ class TailwindVariable
      * @return ClassList The class list builder instance.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function classes(array $slots): ClassList
     {
@@ -71,7 +71,7 @@ class TailwindVariable
      * @return string The version: '3' or '4'.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getVersion(): string
     {
@@ -91,7 +91,7 @@ class TailwindVariable
      * @return CssVariables The CSS variables container.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getCssVariables(): CssVariables
     {
@@ -121,7 +121,7 @@ class TailwindVariable
      * @return Markup The rendered `<style>` tag, safe for direct output.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function include(array $attributes = []): Markup
     {

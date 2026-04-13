@@ -23,7 +23,7 @@ use Twig\Template;
  * every merge operation for the debug toolbar panel.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class TailwindService extends Component
 {
@@ -93,7 +93,7 @@ class TailwindService extends Component
      * @return string The merged CSS class string.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function merge(string ...$classes): string
     {
@@ -136,7 +136,7 @@ class TailwindService extends Component
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function enableRecording(): void
     {
@@ -153,7 +153,7 @@ class TailwindService extends Component
      * @return array<int, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, line: ?int, count: int}>
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getRecordedMerges(): array
     {
@@ -166,7 +166,7 @@ class TailwindService extends Component
      * @return int Number of entries currently held in the LRU cache.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getCacheCount(): int
     {
@@ -184,7 +184,7 @@ class TailwindService extends Component
      * @return ClassList The class list builder instance.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function classes(array $slots): ClassList
     {
@@ -200,7 +200,7 @@ class TailwindService extends Component
      * @return string The version: '3' or '4'.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function getVersion(): string
     {
@@ -219,7 +219,7 @@ class TailwindService extends Component
      * @return CssVariables The CSS variables container.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function cssVariables(): CssVariables
     {
@@ -238,7 +238,7 @@ class TailwindService extends Component
      * @return TailwindMergeV3|TailwindMergeV4 The merge engine instance.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _getMerger(): TailwindMergeV3|TailwindMergeV4
     {
@@ -260,7 +260,7 @@ class TailwindService extends Component
      * @return TailwindMergeV3 The v3 merge engine instance.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _getMergerV3(string $prefix = ''): TailwindMergeV3
     {
@@ -285,7 +285,7 @@ class TailwindService extends Component
      * @return TailwindMergeV4 The v4 merge engine instance.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _getMergerV4(): TailwindMergeV4
     {
@@ -302,7 +302,7 @@ class TailwindService extends Component
      * @return VersionDetector The version detector instance.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _getVersionDetector(): VersionDetector
     {
@@ -323,7 +323,7 @@ class TailwindService extends Component
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _recordMerge(string $input, string $output, bool $cacheHit): void
     {
@@ -358,7 +358,7 @@ class TailwindService extends Component
      * @return array{0: ?string, 1: ?int} Tuple of template name and source line.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _resolveCallSite(): array
     {
@@ -413,7 +413,7 @@ class TailwindService extends Component
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _addToCache(string $key, string $value): void
     {
@@ -440,7 +440,7 @@ class TailwindService extends Component
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _touchCacheKey(string $key): void
     {

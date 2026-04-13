@@ -16,7 +16,7 @@ use craft\base\Model;
  * path resolution, CSS variables, merge caching, and class prefix behavior.
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class Settings extends Model
 {
@@ -115,7 +115,7 @@ class Settings extends Model
      * @return array<int, array<mixed>>
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     protected function defineRules(): array
     {

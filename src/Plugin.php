@@ -36,7 +36,7 @@ use yii\debug\Module as DebugModule;
  * @method Settings getSettings()
  *
  * @author CraftPulse
- * @since 1.0.0
+ * @since 5.0.0
  */
 class Plugin extends BasePlugin
 {
@@ -75,7 +75,7 @@ class Plugin extends BasePlugin
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     public function init(): void
     {
@@ -101,7 +101,7 @@ class Plugin extends BasePlugin
      * @return ?Model The plugin settings model.
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     protected function createSettingsModel(): ?Model
     {
@@ -119,7 +119,7 @@ class Plugin extends BasePlugin
      * @throws \yii\base\Exception
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     protected function settingsHtml(): ?string
     {
@@ -148,7 +148,7 @@ class Plugin extends BasePlugin
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _registerServices(): void
     {
@@ -164,7 +164,7 @@ class Plugin extends BasePlugin
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _registerTwigExtension(): void
     {
@@ -181,7 +181,7 @@ class Plugin extends BasePlugin
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _registerVariables(): void
     {
@@ -206,7 +206,7 @@ class Plugin extends BasePlugin
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _registerAutoInject(): void
     {
@@ -257,7 +257,7 @@ class Plugin extends BasePlugin
      * @return void
      *
      * @author CraftPulse
-     * @since 1.0.0
+     * @since 5.0.0
      */
     private function _registerDebugPanel(): void
     {
