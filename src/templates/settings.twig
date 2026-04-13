@@ -139,3 +139,56 @@
     disabled: overrides.enableDevLogging is defined,
 }) }}
 {{ overrideWarning('enableDevLogging', overrides) }}
+
+<hr>
+
+<h2>Auto-Inject</h2>
+
+<p>Auto-inject renders your CSS variables as a <code>&lt;style&gt;</code> tag in every site page's <code>&lt;head&gt;</code>, so you don't need to call <code>{{ '{{ craft.tailwind.include() }}' }}</code> in your layout. Console and CP requests are never auto-injected.</p>
+
+<p>If your site uses a dynamic per-request CSP nonce, leave this disabled and call <code>{{ '{{ craft.tailwind.include({ nonce: cspNonce }) }}' }}</code> in your layout instead.</p>
+
+{{ forms.lightswitchField({
+    label: 'Auto-Inject CSS Variables',
+    instructions: 'When enabled, the plugin registers the CSS variables style block on every site request automatically.',
+    id: 'autoInject',
+    name: 'autoInject',
+    on: settings.autoInject,
+    errors: settings.getErrors('autoInject'),
+    disabled: overrides.autoInject is defined,
+}) }}
+{{ overrideWarning('autoInject', overrides) }}
+
+{% set attrRows = [] %}
+{% for key, value in settings.autoInjectAttributes %}
+    {% set attrRows = attrRows|merge([{
+        name: key,
+        value: value,
+    }]) %}
+{% endfor %}
+
+{{ forms.editableTableField({
+    label: 'Auto-Inject Attributes',
+    instructions: 'HTML attributes applied to the auto-injected `<style>` tag. Common keys: `nonce` (for static CSP), `media`.',
+    id: 'autoInjectAttributes',
+    name: 'autoInjectAttributes',
+    cols: {
+        name: {
+            heading: 'Attribute',
+            type: 'singleline',
+            placeholder: 'nonce',
+        },
+        value: {
+            heading: 'Value',
+            type: 'singleline',
+            placeholder: 'abc123',
+        },
+    },
+    rows: attrRows,
+    errors: settings.getErrors('autoInjectAttributes'),
+    allowAdd: true,
+    allowDelete: true,
+    allowReorder: true,
+    disabled: overrides.autoInjectAttributes is defined,
+}) }}
+{{ overrideWarning('autoInjectAttributes', overrides) }}

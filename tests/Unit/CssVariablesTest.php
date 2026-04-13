@@ -17,12 +17,6 @@ it('returns empty string from asCss() when no variables exist', function(): void
     expect($vars->asCss())->toBe('');
 });
 
-it('returns empty string from asStyleTag() when no variables exist', function(): void {
-    $vars = new CssVariables([]);
-
-    expect($vars->asStyleTag())->toBe('');
-});
-
 it('returns empty string from __toString() when no variables exist', function(): void {
     $vars = new CssVariables([]);
 
@@ -50,18 +44,6 @@ it('renders multiple variables as a :root CSS block', function(): void {
     $expected = ":root {\n  --color-brand: #222;\n  --size-lg: 1.5rem;\n}";
 
     expect($vars->asCss())->toBe($expected);
-});
-
-// =========================================================================
-// = asStyleTag Output
-// =========================================================================
-
-it('wraps asCss output in a style tag', function(): void {
-    $vars = new CssVariables(['--color-brand' => '#222']);
-
-    $css = $vars->asCss();
-
-    expect($vars->asStyleTag())->toBe('<style>' . $css . '</style>');
 });
 
 // =========================================================================

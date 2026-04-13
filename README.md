@@ -33,8 +33,8 @@ A CMS field lets editors pick a brand color. Tailwind tree-shakes unused classes
 CSS custom properties sidestep this entirely. Define your palette once in plugin settings, reference the variables in your templates with arbitrary value syntax, and swap values at runtime:
 
 ```twig
-{# Inject CSS variables into the page head #}
-{{ craft.tailwind.cssVariables.asStyleTag()|raw }}
+{# Inject CSS variables into the page head -- no |raw needed #}
+{{ craft.tailwind.include() }}
 
 {# Use arbitrary value syntax -- these classes ARE in the build #}
 <div class="bg-[var(--color-brand-primary)] text-[var(--color-brand-on-primary)]">
@@ -102,6 +102,13 @@ return [
 
     // Tailwind class prefix, matching your tailwind.config.js prefix option
     'prefix' => '',
+
+    // Auto-inject CSS variables into every site page's <head>
+    'autoInject' => false,
+
+    // Attributes applied to the auto-injected <style> tag
+    // (e.g. ['nonce' => '...', 'media' => 'screen'])
+    'autoInjectAttributes' => [],
 ];
 ```
 
@@ -199,25 +206,61 @@ Works naturally with Craft's `{% tag %}` helper:
 
 ### CSS variables
 
-Define CSS custom properties in plugin settings (or `config/tailwind.php`), then inject them into your templates. This is useful for editor-controlled design tokens that need to work with Tailwind's arbitrary value syntax.
+Define CSS custom properties in plugin settings (or `config/tailwind.php`), then render them as a `<style>` tag in your layout. The `include()` method returns a `Twig\Markup` object, so you don't need the `|raw` filter:
 
 ```twig
 {# In your layout's <head> #}
-{{ craft.tailwind.cssVariables.asStyleTag()|raw }}
+{{ craft.tailwind.include() }}
 {# Renders: <style>:root { --color-brand-primary: #3490dc; ... }</style> #}
 ```
 
-Query individual variables in templates:
+**CSP and subresource integrity**
+
+Pass attributes to the `<style>` tag — useful for Content Security Policy nonces or other custom attributes:
+
+```twig
+{{ craft.tailwind.include({ nonce: cspNonce }) }}
+{# Renders: <style nonce="abc123">:root { ... }</style> #}
+
+{{ craft.tailwind.include({ media: 'screen' }) }}
+```
+
+The plugin doesn't assume a nonce source — wire it up to your CSP module's per-request nonce however you expose it (a variable, a service, a Twig global).
+
+**Auto-inject**
+
+If you don't want to think about where the tag goes, enable the **Auto-Inject** setting (CP or `config/tailwind.php`). The plugin will register the style block via Craft's `View::registerCss()` on every site request automatically:
+
+```php
+// config/tailwind.php
+return [
+    'autoInject' => true,
+    'autoInjectAttributes' => [
+        'nonce' => 'static-nonce-or-leave-out',
+    ],
+];
+```
+
+Auto-inject is skipped on console requests and CP requests. **If you use a dynamic per-request CSP nonce, keep auto-inject disabled** and call `{{ craft.tailwind.include({ nonce: cspNonce }) }}` in your layout so the nonce can be resolved at render time.
+
+**Inspecting variables**
+
+Use `craft.tailwind.cssVariables` when you need to look up or iterate variables instead of rendering them:
 
 ```twig
 {% if craft.tailwind.cssVariables.has('color-brand-primary') %}
-    {{ craft.tailwind.cssVariables.get('color-brand-primary') }}
+    Primary: {{ craft.tailwind.cssVariables.get('color-brand-primary') }}
 {% endif %}
+
+{# Raw CSS without a <style> wrapper #}
+{{ craft.tailwind.cssVariables.asCss() }}
 ```
+
+**Sanitization and naming**
 
 The `CssVariables` object sanitizes values to prevent CSS injection. Values containing characters outside the safe set (letters, digits, hyphens, underscores, dots, hashes, commas, parentheses, percent signs, slashes, spaces, and quotes) are silently dropped. In devMode, dropped values are logged as warnings.
 
-Variable names are auto-prefixed with `--` if the prefix is missing, so both `color-brand` and `--color-brand` resolve to the same property.
+Variable names are auto-prefixed with `--` if missing, so both `color-brand` and `--color-brand` resolve to the same property.
 
 ### Version detection
 
@@ -242,7 +285,29 @@ When `enableDevLogging` is true and Craft is running in devMode, the plugin logs
 
 ## Typography plugin compatibility
 
-The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box. Prose modifier classes like `prose-sm`, `prose-lg`, and `prose-invert` resolve correctly through the merge engine. No special configuration is needed.
+The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box. Both underlying merge engines understand `prose` and its modifiers as first-class utilities, so size and theme conflicts resolve correctly:
+
+```twig
+{# Size modifiers resolve last-wins #}
+{{ 'prose prose-sm'|twmerge('prose-lg') }}
+{# Result: prose prose-lg #}
+
+{# Light/dark variants resolve last-wins #}
+{{ 'prose prose-slate'|twmerge('prose-invert') }}
+{# Result: prose prose-invert #}
+```
+
+A typical rich-text area with editor-controlled size:
+
+```twig
+{% set proseSize = entry.proseSize.value ?? 'prose-base' %}
+
+<article class="{{ 'prose prose-slate max-w-none'|twmerge(proseSize) }}">
+    {{ entry.body|raw }}
+</article>
+```
+
+No special configuration required — typography utilities follow the same merge rules as every other Tailwind utility.
 
 ## API reference
 
@@ -260,6 +325,7 @@ The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box.
 | `.classes({ slot: 'classes' })` | `ClassList` | Named-slot class builder |
 | `.version` | `string` | Detected Tailwind version (`'3'` or `'4'`) |
 | `.cssVariables` | `CssVariables` | CSS custom properties container |
+| `.include(attributes = {})` | `Twig\Markup` | Ready-to-render `<style>` tag — no `\|raw` required |
 
 ### ClassList methods
 
@@ -275,11 +341,12 @@ The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box.
 
 ### CssVariables methods
 
+Use these when you need introspection; for rendering prefer `craft.tailwind.include()` on the variable.
+
 | Method | Returns | Description |
 |--------|---------|-------------|
 | `__toString()` | `string` | `:root { ... }` CSS block |
-| `.asCss()` | `string` | `:root { ... }` CSS block |
-| `.asStyleTag()` | `string` | `<style>:root { ... }</style>` HTML |
+| `.asCss()` | `string` | `:root { ... }` CSS block (no `<style>` wrapper) |
 | `.get(name)` | `?string` | Value of a single variable |
 | `.has(name)` | `bool` | Whether a variable exists |
 | `.all()` | `array` | All variables as key-value pairs |

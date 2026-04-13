@@ -7,9 +7,12 @@
 
 namespace craftpulse\tailwind\variables;
 
+use craft\helpers\Html;
+use craft\helpers\Template;
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\Plugin;
+use Twig\Markup;
 
 /**
  * Template variable class for the Tailwind plugin.
@@ -78,7 +81,12 @@ class TailwindVariable
     /**
      * Returns the configured CSS variables container.
      *
-     * Usage: `{{ craft.tailwind.cssVariables.asStyleTag() }}`
+     * Use this when you need to inspect individual variables
+     * (`.get()`, `.has()`, `.all()`, `.isEmpty()`) or output raw CSS
+     * without a `<style>` wrapper (`.asCss()`).
+     *
+     * For rendering a ready-to-use `<style>` tag in your layout,
+     * prefer `craft.tailwind.include()` instead.
      *
      * @return CssVariables The CSS variables container.
      *
@@ -88,5 +96,43 @@ class TailwindVariable
     public function getCssVariables(): CssVariables
     {
         return Plugin::$plugin?->tailwind->cssVariables() ?? new CssVariables([]);
+    }
+
+    /**
+     * Renders the CSS variables as a ready-to-use `<style>` tag.
+     *
+     * Returns `Twig\Markup`, so no `|raw` filter is required in templates.
+     * Accepts HTML attributes for the `<style>` tag — use this to pass
+     * a CSP nonce, subresource integrity hash, or a media query.
+     *
+     * Usage:
+     * ```twig
+     * {# In your layout's <head> #}
+     * {{ craft.tailwind.include() }}
+     *
+     * {# With a CSP nonce #}
+     * {{ craft.tailwind.include({ nonce: cspNonce }) }}
+     * ```
+     *
+     * Returns an empty `Markup` instance when no CSS variables are defined.
+     *
+     * @param array<string, string> $attributes HTML attributes for the `<style>` tag.
+     *
+     * @return Markup The rendered `<style>` tag, safe for direct output.
+     *
+     * @author CraftPulse
+     * @since 1.0.0
+     */
+    public function include(array $attributes = []): Markup
+    {
+        $variables = $this->getCssVariables();
+
+        if ($variables->isEmpty()) {
+            return Template::raw('');
+        }
+
+        $tag = Html::tag('style', $variables->asCss(), $attributes);
+
+        return Template::raw($tag);
     }
 }
