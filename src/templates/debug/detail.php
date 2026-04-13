@@ -72,7 +72,7 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
                     </td>
                     <td>
                         <?php if ($merge['template'] !== null): ?>
-                            <code><?= Html::encode($merge['template']) ?></code>
+                            <code><?= Html::encode($merge['template']) ?></code><?php if (!empty($merge['line'])): ?><code style="color: #999;">:<?= (int) $merge['line'] ?></code><?php endif; ?>
                         <?php else: ?>
                             <em style="color: #999;">outside template</em>
                         <?php endif; ?>
