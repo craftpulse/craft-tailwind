@@ -8,6 +8,8 @@
 namespace craftpulse\tailwind\models;
 
 use Craft;
+use craft\console\Application as ConsoleApplication;
+use craft\web\Application as WebApplication;
 use Stringable;
 
 /**
@@ -231,23 +233,25 @@ class CssVariables implements Stringable
      */
     private function _logUnsafeValue(string $name, string $reason): void
     {
-        if (!class_exists(Craft::class)) {
+        // The global `Craft` class isn't in composer's PSR-4 autoload —
+        // a real Craft request loads it via the framework bootstrap. The
+        // `false` flag skips autoload so unit tests (which don't boot
+        // Craft) silently no-op here without surfacing a class-not-found.
+        if (!class_exists(Craft::class, false)) {
             return;
         }
 
-        try {
-            /** @var \craft\web\Application $app */
-            $app = Craft::$app;
-            $config = $app->getConfig();
-
-            if ($config->getGeneral()->devMode) {
-                Craft::warning(
-                    sprintf('CSS variable "%s" skipped: %s.', $name, $reason),
-                    'tailwind',
-                );
-            }
-        } catch (\Throwable) {
-            // Silently ignore — Craft may not be fully initialized.
+        if (!Craft::$app instanceof WebApplication && !Craft::$app instanceof ConsoleApplication) {
+            return;
         }
+
+        if (!Craft::$app->getConfig()->getGeneral()->devMode) {
+            return;
+        }
+
+        Craft::warning(
+            sprintf('CSS variable "%s" skipped: %s.', $name, $reason),
+            'tailwind',
+        );
     }
 }
