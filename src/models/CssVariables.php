@@ -30,9 +30,17 @@ class CssVariables implements Stringable
      * Regex pattern for safe CSS custom property values.
      *
      * Allows letters, digits, hyphens, underscores, dots, hashes,
-     * commas, parentheses, percent signs, forward slashes, spaces, and quotes.
+     * commas, parentheses, percent signs, forward slashes, single spaces,
+     * and quotes. Notably excludes `;`, `{`, `}`, `:`, `<`, `>`, `@`, `*`,
+     * `&`, `=`, `!` (the characters needed to break out of
+     * `:root { --x: VALUE; }`) and whitespace other than space (newlines
+     * and tabs would render as visually broken declarations even though
+     * they cannot themselves cause an injection).
+     *
+     * Reused at save time by `Settings::defineRules()` so admins get a
+     * validation error instead of having values silently stripped at render.
      */
-    private const SAFE_VALUE_PATTERN = '/^[a-zA-Z0-9\-_.\#,()%\/\s\'"]+$/';
+    public const SAFE_VALUE_PATTERN = '/^[a-zA-Z0-9\-_.\#,()%\/ \'"]+$/';
 
     // =========================================================================
     // = Private Properties

@@ -21,6 +21,21 @@ use craft\base\Model;
 class Settings extends Model
 {
     // =========================================================================
+    // = Const Properties
+    // =========================================================================
+
+    /**
+     * HTML attributes the auto-inject `<style>` tag may carry.
+     *
+     * Restricted to a known-safe set so an admin cannot store arbitrary
+     * attributes on a tag rendered into every page's `<head>`. Per-request
+     * use cases (e.g. dynamic CSP nonces from a request scope) should
+     * disable auto-inject and call `craft.tailwind.include()` manually,
+     * which has no whitelist because it's developer-controlled.
+     */
+    public const ALLOWED_AUTO_INJECT_ATTRIBUTES = ['nonce', 'media', 'title'];
+
+    // =========================================================================
     // = Public Properties
     // =========================================================================
 
@@ -141,6 +156,17 @@ class Settings extends Model
                     );
                     return;
                 }
+
+                if (!in_array($key, self::ALLOWED_AUTO_INJECT_ATTRIBUTES, true)) {
+                    $this->addError(
+                        $attribute,
+                        sprintf(
+                            'Auto-inject attribute "%s" is not allowed. Allowed: %s.',
+                            $key,
+                            implode(', ', self::ALLOWED_AUTO_INJECT_ATTRIBUTES),
+                        ),
+                    );
+                }
             }
         }];
         $rules[] = [['cssVariables'], function(string $attribute): void {
@@ -156,6 +182,19 @@ class Settings extends Model
                     $this->addError(
                         $attribute,
                         sprintf('CSS variable "%s" must have a non-empty string value.', $normalizedKey),
+                    );
+                    continue;
+                }
+
+                if (!preg_match(CssVariables::SAFE_VALUE_PATTERN, $value)) {
+                    $this->addError(
+                        $attribute,
+                        sprintf(
+                            'CSS variable "%s" contains unsafe characters. '
+                            . 'Allowed: letters, digits, hyphens, underscores, dots, hashes, '
+                            . 'commas, parentheses, percent signs, slashes, spaces, and quotes.',
+                            $normalizedKey,
+                        ),
                     );
                 }
             }
