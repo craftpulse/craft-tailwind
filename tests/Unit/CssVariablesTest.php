@@ -170,6 +170,7 @@ it('rejects values with unsafe characters', function(): void {
         '--safe' => '#222',
         '--unsafe-semicolon' => '#222; background: url(evil)',
         '--unsafe-curly' => 'red} .injected { color: green',
+        '--unsafe-newline' => "red\nblue",
     ]);
 
     expect($vars->all())->toBe(['--safe' => '#222']);
