@@ -9,6 +9,8 @@ namespace craftpulse\tailwind\services;
 
 use Craft;
 use craft\base\Component;
+use craft\console\Application as ConsoleApplication;
+use craft\web\Application as WebApplication;
 
 /**
  * Auto-detects the Tailwind CSS version used in the current project.
@@ -144,12 +146,18 @@ class VersionDetector extends Component
     {
         $alias = Craft::getAlias('@root', false);
 
-        if ($alias !== false) {
+        if (is_string($alias)) {
             return $alias;
         }
 
         if (defined('CRAFT_BASE_PATH')) {
             return CRAFT_BASE_PATH;
+        }
+
+        $webroot = Craft::getAlias('@webroot', false);
+
+        if (is_string($webroot)) {
+            return dirname($webroot);
         }
 
         return getcwd() ?: '.';
@@ -174,9 +182,14 @@ class VersionDetector extends Component
             return null;
         }
 
-        $cssFiles = glob($searchPath . DIRECTORY_SEPARATOR . '*.{css,pcss}', GLOB_BRACE);
+        // Two glob calls instead of `*.{css,pcss}` with GLOB_BRACE,
+        // which is unavailable on some libcs (notably musl).
+        $cssFiles = array_merge(
+            glob($searchPath . DIRECTORY_SEPARATOR . '*.css') ?: [],
+            glob($searchPath . DIRECTORY_SEPARATOR . '*.pcss') ?: [],
+        );
 
-        if ($cssFiles === false || $cssFiles === []) {
+        if ($cssFiles === []) {
             return null;
         }
 
@@ -246,25 +259,27 @@ class VersionDetector extends Component
      */
     private function _logDetectionFallback(): void
     {
-        if (!class_exists(Craft::class)) {
+        // The global `Craft` class isn't in composer's PSR-4 autoload —
+        // a real Craft request loads it via the framework bootstrap. The
+        // `false` flag skips autoload so unit tests (which don't boot
+        // Craft) silently no-op here without surfacing a class-not-found.
+        if (!class_exists(Craft::class, false)) {
             return;
         }
 
-        try {
-            /** @var \craft\web\Application $app */
-            $app = Craft::$app;
-            $config = $app->getConfig();
-
-            if ($config->getGeneral()->devMode) {
-                Craft::warning(
-                    'Tailwind version auto-detection found no signals. '
-                    . 'Falling back to v4. Set tailwindVersion explicitly in config/tailwind.php '
-                    . 'or plugin settings to silence this warning.',
-                    'tailwind',
-                );
-            }
-        } catch (\Throwable) {
-            // Silently ignore — Craft may not be fully initialized (e.g., in tests).
+        if (!Craft::$app instanceof WebApplication && !Craft::$app instanceof ConsoleApplication) {
+            return;
         }
+
+        if (!Craft::$app->getConfig()->getGeneral()->devMode) {
+            return;
+        }
+
+        Craft::warning(
+            'Tailwind version auto-detection found no signals. '
+            . 'Falling back to v4. Set tailwindVersion explicitly in config/tailwind.php '
+            . 'or plugin settings to silence this warning.',
+            'tailwind',
+        );
     }
 }
