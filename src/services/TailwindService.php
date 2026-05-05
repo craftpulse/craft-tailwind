@@ -10,6 +10,7 @@ namespace craftpulse\tailwind\services;
 use craft\base\Component;
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
+use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\Plugin;
 use TailwindMerge\TailwindMerge as TailwindMergeV3;
 use TalesFromADev\TailwindMerge\TailwindMerge as TailwindMergeV4;
@@ -28,6 +29,22 @@ use Twig\Template;
 class TailwindService extends Component
 {
     // =========================================================================
+    // = Public Properties
+    // =========================================================================
+
+    /**
+     * Optional Settings override.
+     *
+     * When set, takes precedence over `Plugin::$plugin->getSettings()`.
+     * Provided as a Yii-component-style injection seam so unit tests can
+     * exercise specific configurations (e.g. small `cacheSize`) without
+     * bootstrapping the full plugin.
+     *
+     * @var ?Settings
+     */
+    public ?Settings $settings = null;
+
+    // =========================================================================
     // = Private Properties
     // =========================================================================
 
@@ -39,6 +56,17 @@ class TailwindService extends Component
     private ?TailwindMergeV3 $_mergerV3 = null;
 
     /**
+     * The prefix the v3 merger was last initialized with.
+     *
+     * Tracked so a settings change (e.g. via the `$settings` injection seam)
+     * rebuilds the merger when the prefix differs, instead of silently
+     * serving merges from a stale engine configured with the old prefix.
+     *
+     * @var ?string
+     */
+    private ?string $_mergerV3Prefix = null;
+
+    /**
      * The initialized v4 merge engine instance.
      *
      * @var ?TailwindMergeV4
@@ -48,23 +76,41 @@ class TailwindService extends Component
     /**
      * LRU cache of merge results.
      *
+     * Insertion order doubles as recency: a touched key is removed and
+     * re-inserted, moving it to the end of the iteration order. The oldest
+     * key is `array_key_first()`.
+     *
      * @var array<string, string>
      */
     private array $_cache = [];
 
     /**
-     * Ordered list of cache keys for LRU eviction.
+     * Total cache hits observed during the current request.
      *
-     * @var array<int, string>
+     * @var int
      */
-    private array $_cacheKeys = [];
+    private int $_cacheHitCount = 0;
+
+    /**
+     * Total cache misses observed during the current request.
+     *
+     * @var int
+     */
+    private int $_cacheMissCount = 0;
+
+    /**
+     * Memoized CSS variables container for the current request.
+     *
+     * @var ?CssVariables
+     */
+    private ?CssVariables $_cssVariables = null;
 
     /**
      * Recorded merge operations for the debug panel.
      *
      * Each entry is keyed by the merge input string for deduplication.
      *
-     * @var array<string, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, line: ?int, count: int}>
+     * @var array<string, array{input: string, output: string, resolved: bool, template: ?string, line: ?int, count: int}>
      */
     private array $_merges = [];
 
@@ -104,24 +150,29 @@ class TailwindService extends Component
             return '';
         }
 
-        // Check LRU cache
-        $cacheKey = $input;
-        if (isset($this->_cache[$cacheKey])) {
-            $this->_touchCacheKey($cacheKey);
-            $result = $this->_cache[$cacheKey];
+        if (isset($this->_cache[$input])) {
+            $result = $this->_cache[$input];
+
+            // Move to end (LRU touch) — unset + set is O(1) and preserves
+            // PHP's insertion-order array semantics.
+            unset($this->_cache[$input]);
+            $this->_cache[$input] = $result;
+
+            $this->_cacheHitCount++;
 
             if ($this->_recording) {
-                $this->_recordMerge($input, $result, true);
+                $this->_recordMerge($input, $result);
             }
 
             return $result;
         }
 
         $result = $this->_getMerger()->merge($input);
-        $this->_addToCache($cacheKey, $result);
+        $this->_addToCache($input, $result);
+        $this->_cacheMissCount++;
 
         if ($this->_recording) {
-            $this->_recordMerge($input, $result, false);
+            $this->_recordMerge($input, $result);
         }
 
         return $result;
@@ -150,7 +201,7 @@ class TailwindService extends Component
      * merge input, including how many times it was called, whether it
      * resolved a conflict, and the originating template and line.
      *
-     * @return array<int, array{input: string, output: string, resolved: bool, cacheHit: bool, template: ?string, line: ?int, count: int}>
+     * @return array<int, array{input: string, output: string, resolved: bool, template: ?string, line: ?int, count: int}>
      *
      * @author CraftPulse
      * @since 5.0.0
@@ -171,6 +222,56 @@ class TailwindService extends Component
     public function getCacheCount(): int
     {
         return count($this->_cache);
+    }
+
+    /**
+     * Returns the total number of cache hits observed during this request.
+     *
+     * @return int The cache hit count.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function getCacheHitCount(): int
+    {
+        return $this->_cacheHitCount;
+    }
+
+    /**
+     * Returns the total number of cache misses observed during this request.
+     *
+     * @return int The cache miss count.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function getCacheMissCount(): int
+    {
+        return $this->_cacheMissCount;
+    }
+
+    /**
+     * Clears the request-scoped merge cache and memoized state.
+     *
+     * Useful in long-running runtimes (queue workers, Octane, RoadRunner)
+     * where the service instance survives across requests. Resets the LRU
+     * cache, hit/miss counters, recorded merges, and the memoized CSS
+     * variables container. The recording-enabled flag is intentionally
+     * preserved so the debug module's once-per-process registration stays
+     * in effect across requests.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function clearCache(): void
+    {
+        $this->_cache = [];
+        $this->_cacheHitCount = 0;
+        $this->_cacheMissCount = 0;
+        $this->_cssVariables = null;
+        $this->_merges = [];
     }
 
     /**
@@ -204,17 +305,20 @@ class TailwindService extends Component
      */
     public function getVersion(): string
     {
-        $settings = Plugin::$plugin?->getSettings();
+        $settings = $this->_settings();
 
         return $this->_getVersionDetector()->detect(
-            $settings->tailwindVersion ?? 'auto',
-            $settings->buildchainPath ?? null,
-            $settings->cssPath ?? null,
+            $settings?->tailwindVersion ?? 'auto',
+            $settings?->buildchainPath,
+            $settings?->cssPath,
         );
     }
 
     /**
      * Returns the configured CSS variables as a CssVariables instance.
+     *
+     * Memoized for the request lifetime. Call `clearCache()` to invalidate
+     * after settings changes in long-running runtimes.
      *
      * @return CssVariables The CSS variables container.
      *
@@ -223,14 +327,34 @@ class TailwindService extends Component
      */
     public function cssVariables(): CssVariables
     {
-        $settings = Plugin::$plugin?->getSettings();
+        if ($this->_cssVariables === null) {
+            $settings = $this->_settings();
+            $this->_cssVariables = new CssVariables($settings?->cssVariables ?? []);
+        }
 
-        return new CssVariables($settings->cssVariables ?? []);
+        return $this->_cssVariables;
     }
 
     // =========================================================================
     // = Private Methods
     // =========================================================================
+
+    /**
+     * Resolves the settings instance to read configuration from.
+     *
+     * Falls back from the public `$settings` injection seam to the plugin
+     * singleton so production code paths are unchanged while tests can
+     * exercise specific configurations without bootstrapping the plugin.
+     *
+     * @return ?Settings The active settings, or null when neither source is set.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _settings(): ?Settings
+    {
+        return $this->settings ?? Plugin::$plugin?->getSettings();
+    }
 
     /**
      * Gets or creates the appropriate merge engine for the detected version.
@@ -243,8 +367,7 @@ class TailwindService extends Component
     private function _getMerger(): TailwindMergeV3|TailwindMergeV4
     {
         $version = $this->getVersion();
-        $settings = Plugin::$plugin?->getSettings();
-        $prefix = $settings->prefix ?? '';
+        $prefix = $this->_settings()?->prefix ?? '';
 
         return match ($version) {
             VersionDetector::VERSION_4 => $this->_getMergerV4(),
@@ -264,17 +387,20 @@ class TailwindService extends Component
      */
     private function _getMergerV3(string $prefix = ''): TailwindMergeV3
     {
-        if ($this->_mergerV3 === null) {
-            $factory = TailwindMergeV3::factory();
-
-            if ($prefix !== '') {
-                $factory = $factory->withConfiguration([
-                    'prefix' => $prefix,
-                ]);
-            }
-
-            $this->_mergerV3 = $factory->make();
+        if ($this->_mergerV3 !== null && $this->_mergerV3Prefix === $prefix) {
+            return $this->_mergerV3;
         }
+
+        $factory = TailwindMergeV3::factory();
+
+        if ($prefix !== '') {
+            $factory = $factory->withConfiguration([
+                'prefix' => $prefix,
+            ]);
+        }
+
+        $this->_mergerV3 = $factory->make();
+        $this->_mergerV3Prefix = $prefix;
 
         return $this->_mergerV3;
     }
@@ -306,7 +432,7 @@ class TailwindService extends Component
      */
     private function _getVersionDetector(): VersionDetector
     {
-        return Plugin::$plugin?->versionDetector;
+        return Plugin::$plugin?->versionDetector ?? new VersionDetector();
     }
 
     /**
@@ -318,14 +444,13 @@ class TailwindService extends Component
      *
      * @param string $input The normalized merge input string.
      * @param string $output The merge result.
-     * @param bool $cacheHit Whether the result came from the cache.
      *
      * @return void
      *
      * @author CraftPulse
      * @since 5.0.0
      */
-    private function _recordMerge(string $input, string $output, bool $cacheHit): void
+    private function _recordMerge(string $input, string $output): void
     {
         if (isset($this->_merges[$input])) {
             $this->_merges[$input]['count']++;
@@ -339,7 +464,6 @@ class TailwindService extends Component
             'input' => $input,
             'output' => $output,
             'resolved' => $input !== $output,
-            'cacheHit' => $cacheHit,
             'template' => $template,
             'line' => $line,
             'count' => 1,
@@ -405,7 +529,8 @@ class TailwindService extends Component
     /**
      * Adds a merge result to the LRU cache.
      *
-     * Evicts the oldest entry when the cache exceeds the configured size.
+     * Evicts the oldest entries when the cache exceeds the configured size.
+     * A `cacheSize` of `0` disables caching entirely.
      *
      * @param string $key The cache key (input string).
      * @param string $value The cache value (merged result).
@@ -417,40 +542,18 @@ class TailwindService extends Component
      */
     private function _addToCache(string $key, string $value): void
     {
-        $maxSize = Plugin::$plugin?->getSettings()->cacheSize ?? 500;
+        $maxSize = $this->_settings()?->cacheSize ?? 500;
 
-        // Evict oldest if at capacity
-        if (count($this->_cache) >= $maxSize && !isset($this->_cache[$key])) {
-            $oldestKey = array_shift($this->_cacheKeys);
+        if ($maxSize <= 0) {
+            return;
+        }
 
-            if ($oldestKey !== null) {
-                unset($this->_cache[$oldestKey]);
-            }
+        while (count($this->_cache) >= $maxSize) {
+            // The `while` guard keeps the cache non-empty for as long as
+            // we're inside the loop, so `array_key_first()` is never null.
+            unset($this->_cache[array_key_first($this->_cache)]);
         }
 
         $this->_cache[$key] = $value;
-        $this->_cacheKeys[] = $key;
-    }
-
-    /**
-     * Moves a cache key to the end of the LRU queue.
-     *
-     * @param string $key The cache key to touch.
-     *
-     * @return void
-     *
-     * @author CraftPulse
-     * @since 5.0.0
-     */
-    private function _touchCacheKey(string $key): void
-    {
-        $index = array_search($key, $this->_cacheKeys, true);
-
-        if ($index !== false) {
-            unset($this->_cacheKeys[$index]);
-            $this->_cacheKeys = array_values($this->_cacheKeys);
-        }
-
-        $this->_cacheKeys[] = $key;
     }
 }
