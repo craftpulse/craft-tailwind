@@ -31,7 +31,8 @@
         "developer": "CraftPulse",
         "developerUrl": "https://craftpulse.com",
         "documentationUrl": "https://github.com/craftpulse/craft-tailwind",
-        "class": "craftpulse\\tailwind\\Plugin"
+        "class": "craftpulse\\tailwind\\Plugin",
+        "craftcms-claude-skills": "1.3.0"
     },
     "config": {
         "sort-packages": true,
