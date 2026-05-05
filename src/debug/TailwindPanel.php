@@ -86,10 +86,15 @@ class TailwindPanel extends Panel
      * @inheritdoc
      *
      * Returns aggregated merge data for persistence. Each merge entry
-     * includes: input, output, resolved (bool), cacheHit (bool),
-     * template (?string), line (?int), count (int).
+     * includes: input, output, resolved (bool), template (?string),
+     * line (?int), count (int).
      *
-     * @return array{merges: array<int, array<string, mixed>>, totalCalls: int, resolved: int, cacheHits: int, cacheSize: int, version: string}
+     * Cache metrics: `totalCalls = cacheHits + cacheMisses` and counts
+     * every `merge()` call regardless of recording state. The per-record
+     * `count` field tracks dedupe-by-input only when recording is on, so
+     * `sum(count)` is generally lower than `totalCalls`.
+     *
+     * @return array{merges: array<int, array<string, mixed>>, totalCalls: int, resolved: int, cacheHits: int, cacheMisses: int, cacheSize: int, version: string}
      *
      * @author CraftPulse
      * @since 5.0.0
@@ -104,39 +109,34 @@ class TailwindPanel extends Panel
                 'totalCalls' => 0,
                 'resolved' => 0,
                 'cacheHits' => 0,
+                'cacheMisses' => 0,
                 'cacheSize' => 0,
                 'version' => 'unknown',
             ];
         }
 
-        $merges = $plugin->tailwind->getRecordedMerges();
+        $service = $plugin->tailwind;
+        $merges = $service->getRecordedMerges();
 
-        $totalCalls = 0;
         $resolved = 0;
-        $cacheHits = 0;
 
         foreach ($merges as $merge) {
-            $totalCalls += $merge['count'];
-
             if ($merge['resolved']) {
                 $resolved++;
             }
-
-            if ($merge['cacheHit']) {
-                $cacheHits += $merge['count'];
-            } else {
-                // First call was a miss, every subsequent was a hit.
-                $cacheHits += $merge['count'] - 1;
-            }
         }
+
+        $cacheHits = $service->getCacheHitCount();
+        $cacheMisses = $service->getCacheMissCount();
 
         return [
             'merges' => $merges,
-            'totalCalls' => $totalCalls,
+            'totalCalls' => $cacheHits + $cacheMisses,
             'resolved' => $resolved,
             'cacheHits' => $cacheHits,
-            'cacheSize' => $plugin->tailwind->getCacheCount(),
-            'version' => $plugin->tailwind->getVersion(),
+            'cacheMisses' => $cacheMisses,
+            'cacheSize' => $service->getCacheCount(),
+            'version' => $service->getVersion(),
         ];
     }
 }
