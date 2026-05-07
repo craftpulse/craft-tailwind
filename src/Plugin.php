@@ -17,7 +17,6 @@ use craftpulse\tailwind\debug\TailwindPanel;
 use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\services\TailwindService;
 use craftpulse\tailwind\services\VersionDetector;
-use craftpulse\tailwind\twig\TailwindTwigExtension;
 use craftpulse\tailwind\variables\TailwindVariable;
 use yii\base\Application as BaseApplication;
 use yii\base\Event;
@@ -85,7 +84,6 @@ class Plugin extends BasePlugin
         Craft::setAlias('@craftpulse/tailwind', __DIR__);
 
         $this->_registerServices();
-        $this->_registerTwigExtension();
         $this->_registerVariables();
         $this->_registerAutoInject();
         $this->_registerDebugPanel();
@@ -97,11 +95,6 @@ class Plugin extends BasePlugin
 
     /**
      * @inheritdoc
-     *
-     * @return ?Model The plugin settings model.
-     *
-     * @author CraftPulse
-     * @since 5.0.0
      */
     protected function createSettingsModel(): ?Model
     {
@@ -123,13 +116,14 @@ class Plugin extends BasePlugin
      */
     protected function settingsHtml(): ?string
     {
-        /** @var \craft\web\View $view */
-        $view = Craft::$app->getView();
-
+        // `Craft::$app` is statically typed as `yii\base\Application`, which
+        // doesn't expose Craft's `getConfig()` / `getView()`. The CP only
+        // calls `settingsHtml()` from a web request, so a single web-app
+        // cast covers both sites without a runtime instanceof check.
         /** @var \craft\web\Application $app */
         $app = Craft::$app;
 
-        return $view->renderTemplate(
+        return $app->getView()->renderTemplate(
             'tailwind/settings',
             [
                 'settings' => $this->getSettings(),
@@ -156,23 +150,6 @@ class Plugin extends BasePlugin
             'tailwind' => TailwindService::class,
             'versionDetector' => VersionDetector::class,
         ]);
-    }
-
-    /**
-     * Registers the Twig extension for template use.
-     *
-     * @return void
-     *
-     * @author CraftPulse
-     * @since 5.0.0
-     */
-    private function _registerTwigExtension(): void
-    {
-        /** @var \craft\web\View $view */
-        $view = Craft::$app->getView();
-        $view->registerTwigExtension(
-            new TailwindTwigExtension(),
-        );
     }
 
     /**

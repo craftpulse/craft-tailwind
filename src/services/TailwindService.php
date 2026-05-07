@@ -12,6 +12,7 @@ use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\Plugin;
+
 use TailwindMerge\TailwindMerge as TailwindMergeV3;
 use TalesFromADev\TailwindMerge\TailwindMerge as TailwindMergeV4;
 use Twig\Template;
@@ -548,9 +549,7 @@ class TailwindService extends Component
             return;
         }
 
-        while (count($this->_cache) >= $maxSize) {
-            // The `while` guard keeps the cache non-empty for as long as
-            // we're inside the loop, so `array_key_first()` is never null.
+        if (count($this->_cache) >= $maxSize) {
             unset($this->_cache[array_key_first($this->_cache)]);
         }
 

@@ -12,6 +12,7 @@ use craft\helpers\Template;
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\Plugin;
+
 use Twig\Markup;
 
 /**
@@ -60,7 +61,8 @@ class TailwindVariable
      */
     public function classes(array $slots): ClassList
     {
-        return Plugin::$plugin?->tailwind->classes($slots);
+        return Plugin::$plugin?->tailwind->classes($slots)
+            ?? new ClassList([], static fn(string ...$args): string => '');
     }
 
     /**

@@ -14,8 +14,8 @@ use yii\debug\Panel;
 /**
  * Debug toolbar panel for Tailwind merge operations.
  *
- * Surfaces every `craft.tailwind.merge()` and `|twmerge` call made during
- * the current request, including the input, the resolved output, whether
+ * Surfaces every `craft.tailwind.merge()` call made during the current
+ * request, including the input, the resolved output, whether
  * the call served from the LRU cache, the originating template, and the
  * number of repeated calls with identical input.
  *
@@ -30,6 +30,8 @@ class TailwindPanel extends Panel
 
     /**
      * Path alias for the panel view templates.
+     *
+     * @since 5.0.0
      */
     private const VIEW_PATH = '@craftpulse/tailwind/templates/debug/';
 

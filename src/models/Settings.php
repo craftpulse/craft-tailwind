@@ -121,16 +121,80 @@ class Settings extends Model
     public array $autoInjectAttributes = [];
 
     // =========================================================================
+    // = Public Methods
+    // =========================================================================
+
+    /**
+     * Validates the `autoInjectAttributes` map.
+     *
+     * Rejects non-string keys/values and any key outside
+     * {@see self::ALLOWED_AUTO_INJECT_ATTRIBUTES}.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function validateAutoInjectAttributes(): void
+    {
+        foreach ($this->autoInjectAttributes as $key => $value) {
+            if (!in_array($key, self::ALLOWED_AUTO_INJECT_ATTRIBUTES, true)) {
+                $this->addError(
+                    'autoInjectAttributes',
+                    sprintf(
+                        'Auto-inject attribute "%s" is not allowed. Allowed: %s.',
+                        $key,
+                        implode(', ', self::ALLOWED_AUTO_INJECT_ATTRIBUTES),
+                    ),
+                );
+            }
+        }
+    }
+
+    /**
+     * Validates the `cssVariables` map.
+     *
+     * Rejects non-string or empty values and values containing characters
+     * outside {@see CssVariables::SAFE_VALUE_PATTERN}.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function validateCssVariables(): void
+    {
+        foreach ($this->cssVariables as $key => $value) {
+            $normalizedKey = str_starts_with($key, '--') ? $key : '--' . $key;
+
+            if ($value === '') {
+                $this->addError(
+                    'cssVariables',
+                    sprintf('CSS variable "%s" must have a non-empty string value.', $normalizedKey),
+                );
+                continue;
+            }
+
+            if (!preg_match(CssVariables::SAFE_VALUE_PATTERN, $value)) {
+                $this->addError(
+                    'cssVariables',
+                    sprintf(
+                        'CSS variable "%s" contains unsafe characters. '
+                        . 'Allowed: letters, digits, hyphens, underscores, dots, hashes, '
+                        . 'commas, parentheses, percent signs, slashes, spaces, and quotes.',
+                        $normalizedKey,
+                    ),
+                );
+            }
+        }
+    }
+
+    // =========================================================================
     // = Protected Methods
     // =========================================================================
 
     /**
      * @inheritdoc
-     *
-     * @return array<int, array<mixed>>
-     *
-     * @author CraftPulse
-     * @since 5.0.0
      */
     protected function defineRules(): array
     {
@@ -142,63 +206,8 @@ class Settings extends Model
         $rules[] = [['autoInject'], 'boolean'];
         $rules[] = [['cacheSize'], 'integer', 'min' => 0, 'max' => 10000];
         $rules[] = [['prefix'], 'string'];
-        $rules[] = [['autoInjectAttributes'], function(string $attribute): void {
-            if (!is_array($this->$attribute)) {
-                $this->addError($attribute, 'Auto-inject attributes must be an array.');
-                return;
-            }
-
-            foreach ($this->$attribute as $key => $value) {
-                if (!is_string($key) || !is_string($value)) {
-                    $this->addError(
-                        $attribute,
-                        'Auto-inject attributes must be a string => string array.',
-                    );
-                    return;
-                }
-
-                if (!in_array($key, self::ALLOWED_AUTO_INJECT_ATTRIBUTES, true)) {
-                    $this->addError(
-                        $attribute,
-                        sprintf(
-                            'Auto-inject attribute "%s" is not allowed. Allowed: %s.',
-                            $key,
-                            implode(', ', self::ALLOWED_AUTO_INJECT_ATTRIBUTES),
-                        ),
-                    );
-                }
-            }
-        }];
-        $rules[] = [['cssVariables'], function(string $attribute): void {
-            if (!is_array($this->$attribute)) {
-                $this->addError($attribute, 'CSS variables must be an array.');
-                return;
-            }
-
-            foreach ($this->$attribute as $key => $value) {
-                $normalizedKey = str_starts_with((string) $key, '--') ? $key : '--' . $key;
-
-                if (!is_string($value) || $value === '') {
-                    $this->addError(
-                        $attribute,
-                        sprintf('CSS variable "%s" must have a non-empty string value.', $normalizedKey),
-                    );
-                    continue;
-                }
-
-                if (!preg_match(CssVariables::SAFE_VALUE_PATTERN, $value)) {
-                    $this->addError(
-                        $attribute,
-                        sprintf(
-                            'CSS variable "%s" contains unsafe characters. '
-                            . 'Allowed: letters, digits, hyphens, underscores, dots, hashes, '
-                            . 'commas, parentheses, percent signs, slashes, spaces, and quotes.',
-                            $normalizedKey,
-                        ),
-                    );
-                }
-            }
-        }];
+        $rules[] = [['autoInjectAttributes'], 'validateAutoInjectAttributes'];
+        $rules[] = [['cssVariables'], 'validateCssVariables'];
 
         return $rules;
     }
