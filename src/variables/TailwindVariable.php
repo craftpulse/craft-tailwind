@@ -9,6 +9,7 @@ namespace craftpulse\tailwind\variables;
 
 use craft\helpers\Html;
 use craft\helpers\Template;
+
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\Plugin;

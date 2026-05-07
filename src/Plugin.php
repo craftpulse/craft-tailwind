@@ -13,11 +13,13 @@ use craft\base\Plugin as BasePlugin;
 use craft\web\Application;
 use craft\web\twig\variables\CraftVariable;
 use craft\web\View;
+
 use craftpulse\tailwind\debug\TailwindPanel;
 use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\services\TailwindService;
 use craftpulse\tailwind\services\VersionDetector;
 use craftpulse\tailwind\variables\TailwindVariable;
+
 use yii\base\Application as BaseApplication;
 use yii\base\Event;
 use yii\debug\Module as DebugModule;
@@ -95,6 +97,9 @@ class Plugin extends BasePlugin
 
     /**
      * @inheritdoc
+     *
+     * @author CraftPulse
+     * @since 5.0.0
      */
     protected function createSettingsModel(): ?Model
     {

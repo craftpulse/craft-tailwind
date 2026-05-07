@@ -8,7 +8,9 @@
 namespace craftpulse\tailwind\debug;
 
 use Craft;
+
 use craftpulse\tailwind\Plugin;
+
 use yii\debug\Panel;
 
 /**
