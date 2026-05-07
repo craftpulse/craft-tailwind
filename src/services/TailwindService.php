@@ -8,6 +8,7 @@
 namespace craftpulse\tailwind\services;
 
 use craft\base\Component;
+
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\models\Settings;

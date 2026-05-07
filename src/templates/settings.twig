@@ -55,8 +55,8 @@
 
 {% js %}
 (function() {
-    var versionSelect = document.getElementById('tailwindVersion');
-    var cssPathField = document.getElementById('cssPath-field');
+    const versionSelect = document.getElementById('tailwindVersion');
+    const cssPathField = document.getElementById('cssPath-field');
     if (versionSelect && cssPathField) {
         versionSelect.addEventListener('change', function() {
             if (this.value === 'auto' || this.value === '4') {
