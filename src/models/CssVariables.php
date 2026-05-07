@@ -32,7 +32,7 @@ class CssVariables implements Stringable
      * Regex pattern for safe CSS custom property values.
      *
      * Allows letters, digits, hyphens, underscores, dots, hashes,
-     * commas, parentheses, percent signs, forward slashes, single spaces,
+     * commas, parentheses, percent signs, forward slashes, spaces,
      * and quotes. Notably excludes `;`, `{`, `}`, `:`, `<`, `>`, `@`, `*`,
      * `&`, `=`, `!` (the characters needed to break out of
      * `:root { --x: VALUE; }`) and whitespace other than space (newlines
@@ -233,14 +233,6 @@ class CssVariables implements Stringable
      */
     private function _logUnsafeValue(string $name, string $reason): void
     {
-        // The global `Craft` class isn't in composer's PSR-4 autoload —
-        // a real Craft request loads it via the framework bootstrap. The
-        // `false` flag skips autoload so unit tests (which don't boot
-        // Craft) silently no-op here without surfacing a class-not-found.
-        if (!class_exists(Craft::class, false)) {
-            return;
-        }
-
         if (!Craft::$app instanceof WebApplication && !Craft::$app instanceof ConsoleApplication) {
             return;
         }

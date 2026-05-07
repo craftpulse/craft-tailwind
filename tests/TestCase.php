@@ -5,7 +5,7 @@
  * @copyright Copyright (c) CraftPulse
  */
 
-namespace craftpulse\tailwindtests;
+namespace craftpulse\tailwind\tests;
 
 use PHPUnit\Framework\TestCase as BaseTestCase;
 

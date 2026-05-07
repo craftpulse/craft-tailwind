@@ -22,7 +22,7 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "craftpulse\\tailwindtests\\": "tests/"
+            "craftpulse\\tailwind\\tests\\": "tests/"
         }
     },
     "extra": {

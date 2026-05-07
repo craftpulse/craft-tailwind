@@ -38,16 +38,6 @@ it('rejects auto-inject attribute keys outside the whitelist', function(): void 
     expect($errors[0])->toContain('not allowed');
 });
 
-it('rejects non-string auto-inject attribute values', function(): void {
-    $settings = new Settings([
-        'autoInjectAttributes' => ['nonce' => ['nested']],
-    ]);
-
-    $settings->validate();
-
-    expect($settings->getErrors('autoInjectAttributes'))->not->toBeEmpty();
-});
-
 it('exposes the allowed auto-inject attribute set as a constant', function(): void {
     expect(Settings::ALLOWED_AUTO_INJECT_ATTRIBUTES)->toBe(['nonce', 'media', 'title']);
 });

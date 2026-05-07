@@ -5,9 +5,9 @@
  * @copyright Copyright (c) CraftPulse
  */
 
-// Yii2's built-in validators (`in`, `integer`, `string`, etc.) call
-// `Yii::createObject()`, which requires the global `Yii` class. Yii's
-// composer autoload doesn't include `Yii.php` itself — Craft's web/console
-// bootstrap normally loads it. For unit tests that exercise validation
-// without booting Craft, we load it here.
+// Yii's `\Yii` and Craft's `\Craft` are global classes outside their
+// packages' PSR-4 maps — Craft's web/console bootstrap loads them via
+// explicit require. Mirror that here so unit tests can reference
+// `Craft::$app` (which is null pre-bootstrap) without a class-not-found.
 require_once dirname(__DIR__) . '/vendor/yiisoft/yii2/Yii.php';
+require_once dirname(__DIR__) . '/vendor/craftcms/cms/src/Craft.php';

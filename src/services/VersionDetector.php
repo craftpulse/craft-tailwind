@@ -259,14 +259,6 @@ class VersionDetector extends Component
      */
     private function _logDetectionFallback(): void
     {
-        // The global `Craft` class isn't in composer's PSR-4 autoload —
-        // a real Craft request loads it via the framework bootstrap. The
-        // `false` flag skips autoload so unit tests (which don't boot
-        // Craft) silently no-op here without surfacing a class-not-found.
-        if (!class_exists(Craft::class, false)) {
-            return;
-        }
-
         if (!Craft::$app instanceof WebApplication && !Craft::$app instanceof ConsoleApplication) {
             return;
         }
