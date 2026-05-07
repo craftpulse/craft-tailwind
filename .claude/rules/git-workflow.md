@@ -9,5 +9,5 @@
 - Run `ddev composer check-cs` and `ddev composer phpstan` before every commit.
 - No AI attribution in commit messages, PR descriptions, PR comments, or issue comments. No `Co-Authored-By` lines referencing AI tools.
 - All comments, commit messages, and documentation in English only.
-- `main` is the default and only long-lived branch. Topic branches for non-trivial work, merged via PR. Use `gh pr create` — the CLI is authenticated.
+- `develop-v5` is the default and only long-lived branch. Topic branches for non-trivial work, merged via PR. Use `gh pr create` — the CLI is authenticated.
 - Use absolute paths in git commands. Never `cd path && git commit` — the target directory may have untrusted hooks.
