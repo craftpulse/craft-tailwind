@@ -143,3 +143,83 @@ it('rejects unknown tailwindVersion values', function(): void {
 
     expect($settings->getErrors('tailwindVersion'))->not->toBeEmpty();
 });
+
+// =========================================================================
+// = CP form roundtrip — editable-table POST shape
+// =========================================================================
+
+it('normalizes the editable-table POST shape for cssVariables', function(): void {
+    // Mirrors what `forms.editableTableField` posts: `field[rowId][colId]`.
+    $settings = new Settings([
+        'cssVariables' => [
+            'row1' => ['name' => '--color-brand', 'value' => '#3490dc'],
+            'row2' => ['name' => '--font-display', 'value' => '"Inter", sans-serif'],
+        ],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('cssVariables'))->toBe([]);
+    expect($settings->cssVariables)->toBe([
+        '--color-brand' => '#3490dc',
+        '--font-display' => '"Inter", sans-serif',
+    ]);
+});
+
+it('normalizes the editable-table POST shape for autoInjectAttributes', function(): void {
+    $settings = new Settings([
+        'autoInjectAttributes' => [
+            'row1' => ['name' => 'nonce', 'value' => 'abc123'],
+            'row2' => ['name' => 'media', 'value' => 'screen'],
+        ],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('autoInjectAttributes'))->toBe([]);
+    expect($settings->autoInjectAttributes)->toBe([
+        'nonce' => 'abc123',
+        'media' => 'screen',
+    ]);
+});
+
+it('drops editable-table rows with an empty name on normalization', function(): void {
+    // Editable tables submit a blank trailing row when the admin adds one
+    // and never fills it. Those should be dropped silently, not validated.
+    $settings = new Settings([
+        'cssVariables' => [
+            'row1' => ['name' => '--color', 'value' => '#fff'],
+            'row2' => ['name' => '', 'value' => ''],
+        ],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('cssVariables'))->toBe([]);
+    expect($settings->cssVariables)->toBe(['--color' => '#fff']);
+});
+
+it('leaves a flat-shape cssVariables map untouched on normalization', function(): void {
+    // Constructor injection from code or `config/tailwind.php` — already flat.
+    $settings = new Settings([
+        'cssVariables' => ['--color' => '#fff', '--brand' => '#222'],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->cssVariables)->toBe(['--color' => '#fff', '--brand' => '#222']);
+});
+
+it('runs the editable-table validators against the normalized shape', function(): void {
+    // An unsafe value buried in the row format must still be rejected.
+    $settings = new Settings([
+        'cssVariables' => [
+            'row1' => ['name' => '--injected', 'value' => 'red; } body { display: none; /*'],
+        ],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('cssVariables'))->not->toBeEmpty();
+    expect($settings->cssVariables)->toBe(['--injected' => 'red; } body { display: none; /*']);
+});

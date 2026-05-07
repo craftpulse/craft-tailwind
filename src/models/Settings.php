@@ -195,6 +195,28 @@ class Settings extends Model
 
     /**
      * @inheritdoc
+     *
+     * Normalizes the editable-table POST shape that Craft's CP delivers
+     * for `cssVariables` and `autoInjectAttributes` into the flat
+     * `name => value` map the rest of the plugin expects. See
+     * {@see self::_normalizeEditableTableShape()} for the shape contract.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function beforeValidate(): bool
+    {
+        $this->cssVariables = $this->_normalizeEditableTableShape($this->cssVariables);
+        $this->autoInjectAttributes = $this->_normalizeEditableTableShape($this->autoInjectAttributes);
+
+        return parent::beforeValidate();
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * @author CraftPulse
+     * @since 5.0.0
      */
     protected function defineRules(): array
     {
@@ -210,5 +232,48 @@ class Settings extends Model
         $rules[] = [['cssVariables'], 'validateCssVariables'];
 
         return $rules;
+    }
+
+    // =========================================================================
+    // = Private Methods
+    // =========================================================================
+
+    /**
+     * Normalizes editable-table POST input to a flat `name => value` map.
+     *
+     * Craft's `forms.editableTableField` posts each cell as
+     * `field[rowId][colId]=value`, so PHP delivers
+     * `[rowId => ['name' => '...', 'value' => '...']]`. This method folds
+     * those rows down to the flat associative shape the model declares,
+     * while leaving inputs that are already flat (constructor injection,
+     * `config/tailwind.php`) untouched.
+     *
+     * @param array<mixed> $value Raw input — either row format or flat map.
+     *
+     * @return array<string, string> Normalized flat map.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _normalizeEditableTableShape(array $value): array
+    {
+        $normalized = [];
+
+        foreach ($value as $key => $entry) {
+            if (is_array($entry) && array_key_exists('name', $entry)) {
+                $name = (string) $entry['name'];
+
+                if ($name === '') {
+                    continue;
+                }
+
+                $normalized[$name] = (string) ($entry['value'] ?? '');
+                continue;
+            }
+
+            $normalized[(string) $key] = (string) $entry;
+        }
+
+        return $normalized;
     }
 }
