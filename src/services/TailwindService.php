@@ -516,6 +516,14 @@ class TailwindService extends Component
             $factory = $factory->withConfiguration($config);
         }
 
+        // `Factory::make()` writes the merged config into a class-level static
+        // on `TailwindMerge\Support\Config`, and the resulting merger reads
+        // conflict-group data from that static on every `merge()` call (not
+        // from the instance). One service per request keeps this safe; a
+        // second `TailwindService` or a direct `TailwindMergeV3::factory()`
+        // call elsewhere in the same request would stomp the static, leaving
+        // any earlier merger reading the wrong groups. `clearCache()` plus
+        // the signature-based rebuild keep this contained for the test suite.
         $this->_mergerV3 = $factory->make();
         $this->_mergerV3Signature = $signature;
 
