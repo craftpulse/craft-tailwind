@@ -57,15 +57,23 @@ A form input has default styling. Error state needs a red border. Disabled state
 
 ## Installation
 
+You can install Tailwind via the **Plugin Store** in the Craft control panel, or from the command line.
+
+**With DDEV:**
+
+```bash
+ddev composer require craftpulse/craft-tailwind
+ddev craft plugin/install tailwind
+```
+
+**Without DDEV:**
+
 ```bash
 composer require craftpulse/craft-tailwind
-```
-
-Then install the plugin via the control panel under Settings > Plugins, or from the command line:
-
-```bash
 php craft plugin/install tailwind
 ```
+
+Tailwind works on Craft 5.x and requires PHP 8.2 or later.
 
 ## Configuration
 
