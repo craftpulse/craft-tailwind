@@ -34,6 +34,17 @@ class Settings extends Model
      */
     public const ALLOWED_AUTO_INJECT_ATTRIBUTES = ['nonce', 'media', 'title'];
 
+    /**
+     * Shape allowed for Tailwind class prefixes and typography suffixes.
+     *
+     * Must start with a letter, then letters, digits, hyphens, or underscores.
+     * Shared between {@see self::validatePrefix()} and
+     * {@see self::validateTypographyExtras()} — the contract is identical
+     * because both validate strings that ultimately participate in a
+     * Tailwind class name.
+     */
+    private const CLASS_SUFFIX_PATTERN = '/^[a-zA-Z][a-zA-Z0-9_-]*$/';
+
     // Public Properties
     // =========================================================================
 
@@ -214,7 +225,7 @@ class Settings extends Model
             return;
         }
 
-        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $this->prefix)) {
+        if (!preg_match(self::CLASS_SUFFIX_PATTERN, $this->prefix)) {
             $this->addError(
                 'prefix',
                 'Prefix must start with a letter and contain only letters, digits, hyphens, or underscores.',
@@ -264,7 +275,7 @@ class Settings extends Model
                 continue;
             }
 
-            if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $entry)) {
+            if (!preg_match(self::CLASS_SUFFIX_PATTERN, $entry)) {
                 $this->addError(
                     $attribute,
                     sprintf(
