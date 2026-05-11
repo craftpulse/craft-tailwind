@@ -31,6 +31,19 @@ use Twig\Template;
  */
 class TailwindService extends Component
 {
+    // Const Properties
+    // =========================================================================
+
+    /**
+     * Maximum stack-frame count to scan when resolving a Twig template call site.
+     *
+     * Twig template rendering chains can get deep (layouts including layouts
+     * including macros including blocks); a 50-frame cap leaves headroom over
+     * typical depths while bounding the cost of the recording path, which
+     * runs only when the Yii debug module is loaded.
+     */
+    private const CALL_SITE_TRACE_DEPTH = 50;
+
     // Public Properties
     // =========================================================================
 
@@ -636,7 +649,10 @@ class TailwindService extends Component
      */
     private function _resolveCallSite(): array
     {
-        $trace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS | DEBUG_BACKTRACE_PROVIDE_OBJECT, 25);
+        $trace = debug_backtrace(
+            DEBUG_BACKTRACE_IGNORE_ARGS | DEBUG_BACKTRACE_PROVIDE_OBJECT,
+            self::CALL_SITE_TRACE_DEPTH,
+        );
 
         $template = null;
         foreach ($trace as $frame) {
