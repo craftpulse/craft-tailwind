@@ -15,7 +15,6 @@ Initial public release for Craft CMS 5.
 - `<style>` tag rendering via `craft.tailwind.include({ nonce, media, title })` — returns `Twig\Markup` so no `|raw` is required.
 - Auto-inject mode (`autoInject` + `autoInjectAttributes`) that registers the CSS variables style block on every site request via `View::registerCss()`. Skips console and CP requests.
 - O(1) LRU merge cache, request-scoped, with configurable `cacheSize` (set to `0` to disable). Hit/miss counters surfaced through the debug panel.
-- `clearCache()` method on `TailwindService` for long-running runtimes (Octane, RoadRunner, queue workers).
 - Yii debug toolbar panel showing total calls, unique inputs, cache hit rate, and per-merge detail (input, output, resolved/passthrough, count, originating template + line). Zero overhead when the debug module isn't loaded.
 - CP settings page with editable tables for `cssVariables` and `autoInjectAttributes`, per-field override warnings when shadowed by `config/tailwind.php`, and a conditional CSS-path field shown only when version detection includes v4.
 - Multi-environment configuration support in `config/tailwind.php` (Craft's standard `'*' + env` pattern).

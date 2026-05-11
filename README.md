@@ -136,10 +136,6 @@ The merge engine is called every time you use `craft.tailwind.merge()` or build 
 
 The cache is per-request: it lives only for the duration of one PHP process. You don't need to think about invalidation. Set `cacheSize` to `0` to disable caching entirely (useful when debugging a merge).
 
-### Long-running runtimes (Octane, RoadRunner, queue workers)
-
-If you run Craft in a persistent process — Laravel Octane, RoadRunner, or a long-lived queue worker — the merge cache, hit/miss counters, debug recordings, and memoized CSS variables container carry over between requests. Call `Plugin::$plugin->tailwind->clearCache()` at the start of each request (e.g. on `EVENT_BEFORE_REQUEST`) to reset the request-scoped state. Standard FPM/CLI Craft setups don't need this — the PHP process exits at the end of each request and state is naturally cleared.
-
 ### Multi-environment configuration
 
 The config file supports Craft's standard multi-environment pattern:

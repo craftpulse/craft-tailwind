@@ -59,10 +59,9 @@ class TailwindService extends Component
     /**
      * Signature describing the configuration the v3 merger was built with.
      *
-     * Tracked so a settings change (e.g. via the `$settings` injection seam,
-     * or between requests in a long-running runtime) rebuilds the merger
-     * when its config inputs differ, instead of silently serving merges
-     * from a stale engine.
+     * Tracked so a settings change via the `$settings` injection seam (used
+     * by the test suite) rebuilds the merger when its config inputs differ,
+     * instead of silently serving merges from a stale engine.
      *
      * @var ?string
      */
@@ -278,16 +277,17 @@ class TailwindService extends Component
     }
 
     /**
-     * Clears the request-scoped merge cache and memoized state.
+     * Resets the request-scoped merge cache and memoized state.
      *
-     * Useful in long-running runtimes (queue workers, Octane, RoadRunner)
-     * where the service instance survives across requests. Resets the LRU
-     * cache, hit/miss counters, recorded merges, and the memoized CSS
-     * variables / typography config containers. The recording-enabled flag
-     * is intentionally preserved so the debug module's once-per-process
-     * registration stays in effect across requests. Merger instances are
-     * also intentionally retained — they invalidate themselves via the
-     * per-merger signature when settings change.
+     * Primarily a test seam: the test suite calls this between scenarios
+     * that mutate the `$settings` injection seam to force re-evaluation
+     * against the new configuration. Production code in a standard Craft
+     * deployment doesn't need to call this — the service is instantiated
+     * fresh per request and discarded at the end. Resets the LRU cache,
+     * hit/miss counters, recorded merges, and the memoized CSS variables
+     * and typography config containers. The recording-enabled flag and
+     * merger instances are intentionally preserved — the latter invalidate
+     * themselves via the per-merger signature when settings change.
      *
      * @return void
      *
@@ -366,8 +366,7 @@ class TailwindService extends Component
     /**
      * Returns the configured CSS variables as a CssVariables instance.
      *
-     * Memoized for the request lifetime. Call `clearCache()` to invalidate
-     * after settings changes in long-running runtimes.
+     * Memoized for the request lifetime.
      *
      * @return CssVariables The CSS variables container.
      *
@@ -446,9 +445,7 @@ class TailwindService extends Component
      * invoke this on every cache miss to compute the merger signature;
      * the first call resolves from settings, subsequent calls return the
      * cached instance (or the cached `null` when typography is disabled).
-     * Cache hits in the merge LRU never reach this method. Call
-     * `clearCache()` to invalidate the memo in long-running runtimes
-     * after a settings change.
+     * Cache hits in the merge LRU never reach this method.
      *
      * @return ?TypographyConfig The configured typography conflict groups, or null when off.
      *
