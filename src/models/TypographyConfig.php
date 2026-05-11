@@ -170,7 +170,9 @@ class TypographyConfig
      * Consumed by `TailwindService` to detect when the merger needs to
      * rebuild — two `TypographyConfig` instances with the same extras
      * always produce the same signature, and any extras change produces
-     * a different one.
+     * a different one. The lists are sorted before hashing so reordering
+     * extras in the CP editable-table doesn't trigger an unnecessary
+     * merger rebuild — order has no semantic meaning in a conflict group.
      *
      * @return string Short opaque identifier suitable for cache-key use.
      *
@@ -179,6 +181,11 @@ class TypographyConfig
      */
     public function signature(): string
     {
-        return sha1(implode(',', $this->getSizes()) . '|' . implode(',', $this->getColors()));
+        $sizes = $this->getSizes();
+        $colors = $this->getColors();
+        sort($sizes);
+        sort($colors);
+
+        return sha1(implode(',', $sizes) . '|' . implode(',', $colors));
     }
 }
