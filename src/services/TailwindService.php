@@ -442,11 +442,13 @@ class TailwindService extends Component
     /**
      * Returns the typography conflict-group config for the current request.
      *
-     * Memoized so the merger getters (called once per uncached merge) reuse
-     * the same instance instead of allocating a fresh `TypographyConfig`
-     * every call. Returns `null` when the `typography` setting is off.
-     * Call `clearCache()` to invalidate in long-running runtimes after a
-     * settings change.
+     * Memoized for the request lifetime. `_getMergerV3()` and `_getMergerV4()`
+     * invoke this on every cache miss to compute the merger signature;
+     * the first call resolves from settings, subsequent calls return the
+     * cached instance (or the cached `null` when typography is disabled).
+     * Cache hits in the merge LRU never reach this method. Call
+     * `clearCache()` to invalidate the memo in long-running runtimes
+     * after a settings change.
      *
      * @return ?TypographyConfig The configured typography conflict groups, or null when off.
      *

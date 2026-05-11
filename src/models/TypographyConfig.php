@@ -167,9 +167,11 @@ class TypographyConfig
      * Consumed by `TailwindService` to detect when the merger needs to
      * rebuild — two `TypographyConfig` instances with the same extras
      * always produce the same signature, and any extras change produces
-     * a different one. The lists are sorted before hashing so reordering
-     * extras in the CP editable-table doesn't trigger an unnecessary
-     * merger rebuild — order has no semantic meaning in a conflict group.
+     * a different one. Both lists are sorted before hashing so any input
+     * ordering produces the same signature: a conflict-group entry's
+     * position carries no semantic meaning, so neither reordering rows
+     * in the CP editable-table nor any future shuffle of the defaults
+     * should trigger a rebuild.
      *
      * @return string Short opaque identifier suitable for cache-key use.
      *
