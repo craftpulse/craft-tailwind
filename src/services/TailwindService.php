@@ -44,6 +44,18 @@ class TailwindService extends Component
      */
     private const CALL_SITE_TRACE_DEPTH = 25;
 
+    /**
+     * Hard cap on unique merge inputs recorded for the debug panel.
+     *
+     * Recording is gated on the Yii debug module so this only matters in
+     * dev. A page that triggers thousands of unique merge inputs is rare
+     * but possible (rich CMS data with many editor-chosen colors, etc.);
+     * the cap keeps memory bounded and keeps the panel table renderable.
+     * Already-recorded inputs continue to increment their `count` past
+     * the cap — only new unique inputs are dropped.
+     */
+    private const MAX_RECORDED_MERGES = 1000;
+
     // Public Properties
     // =========================================================================
 
@@ -628,6 +640,10 @@ class TailwindService extends Component
         if (isset($this->_merges[$input])) {
             $this->_merges[$input]['count']++;
 
+            return;
+        }
+
+        if (count($this->_merges) >= self::MAX_RECORDED_MERGES) {
             return;
         }
 

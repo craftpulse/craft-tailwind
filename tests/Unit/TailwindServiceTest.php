@@ -451,3 +451,18 @@ it('flags resolved conflicts in recorded merges', function(): void {
     expect($byInput['bg-red-500 bg-blue-500']['resolved'])->toBeTrue();
     expect($byInput['px-4 mt-2']['resolved'])->toBeFalse();
 });
+
+it('caps the recorded-merges map at the hard-coded ceiling', function(): void {
+    // The cap protects the debug panel from runaway memory on pages that
+    // emit thousands of unique merge inputs. Already-recorded inputs keep
+    // incrementing their `count` past the cap; only new uniques are dropped.
+    $service = makeService(['cacheSize' => 0]);
+    $service->enableRecording();
+
+    // 1001 unique inputs — one past the MAX_RECORDED_MERGES limit of 1000.
+    for ($i = 0; $i < 1001; $i++) {
+        $service->merge('w-' . $i);
+    }
+
+    expect($service->getRecordedMerges())->toHaveCount(1000);
+});
