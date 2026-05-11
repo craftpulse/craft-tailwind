@@ -71,10 +71,7 @@
 
 {% set cssVarRows = [] %}
 {% for key, value in settings.cssVariables %}
-    {% set cssVarRows = cssVarRows|merge([{
-        name: key,
-        value: value,
-    }]) %}
+    {% set cssVarRows = cssVarRows|merge([{ name: key, value: value }]) %}
 {% endfor %}
 
 {{ forms.editableTableField({
@@ -148,10 +145,7 @@
 }) }}
 {{ overrideWarning('typography', overrides) }}
 
-{% set sizeRows = [] %}
-{% for suffix in settings.typographyExtraSizes %}
-    {% set sizeRows = sizeRows|merge([{ suffix: suffix }]) %}
-{% endfor %}
+{% set sizeRows = settings.typographyExtraSizes|map(s => { suffix: s }) %}
 
 {{ forms.editableTableField({
     label: 'Extra Sizes',
@@ -174,10 +168,7 @@
 }) }}
 {{ overrideWarning('typographyExtraSizes', overrides) }}
 
-{% set colorRows = [] %}
-{% for suffix in settings.typographyExtraColors %}
-    {% set colorRows = colorRows|merge([{ suffix: suffix }]) %}
-{% endfor %}
+{% set colorRows = settings.typographyExtraColors|map(s => { suffix: s }) %}
 
 {{ forms.editableTableField({
     label: 'Extra Colors',
@@ -221,10 +212,7 @@
 
 {% set attrRows = [] %}
 {% for key, value in settings.autoInjectAttributes %}
-    {% set attrRows = attrRows|merge([{
-        name: key,
-        value: value,
-    }]) %}
+    {% set attrRows = attrRows|merge([{ name: key, value: value }]) %}
 {% endfor %}
 
 {{ forms.editableTableField({

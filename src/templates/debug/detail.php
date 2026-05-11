@@ -69,14 +69,15 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
             <?php else:
                 $sizeCount = count($typography['sizes'] ?? []);
                 $colorCount = count($typography['colors'] ?? []);
-                $extraSizes = $typography['extraSizes'] ?? [];
-                $extraColors = $typography['extraColors'] ?? [];
+                $customSuffixes = array_map(
+                    static fn(string $suffix): string => 'prose-' . $suffix,
+                    [...($typography['extraSizes'] ?? []), ...($typography['extraColors'] ?? [])],
+                );
                 ?>
                 enabled (<?= $sizeCount ?> sizes, <?= $colorCount ?> colors)
-                <?php if ($extraSizes !== [] || $extraColors !== []): ?>
+                <?php if ($customSuffixes !== []): ?>
                     <span class="muted">
-                        &middot; custom:
-                        <?= $extraSizes === [] ? '' : Html::encode(implode(', ', array_map(static fn($s) => 'prose-' . $s, $extraSizes))) ?><?php if ($extraSizes !== [] && $extraColors !== []): ?>, <?php endif; ?><?= $extraColors === [] ? '' : Html::encode(implode(', ', array_map(static fn($c) => 'prose-' . $c, $extraColors))) ?>
+                        &middot; custom: <?= Html::encode(implode(', ', $customSuffixes)) ?>
                     </span>
                 <?php endif; ?>
             <?php endif; ?>
