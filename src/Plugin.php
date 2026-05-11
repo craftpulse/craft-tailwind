@@ -41,8 +41,7 @@ use yii\debug\Module as DebugModule;
  */
 class Plugin extends BasePlugin
 {
-    // =========================================================================
-    // = Static Properties
+    // Static Properties
     // =========================================================================
 
     /**
@@ -52,8 +51,7 @@ class Plugin extends BasePlugin
      */
     public static ?Plugin $plugin = null;
 
-    // =========================================================================
-    // = Public Properties
+    // Public Properties
     // =========================================================================
 
     /**
@@ -66,8 +64,7 @@ class Plugin extends BasePlugin
      */
     public bool $hasCpSettings = true;
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**
@@ -91,8 +88,7 @@ class Plugin extends BasePlugin
         $this->_registerDebugPanel();
     }
 
-    // =========================================================================
-    // = Protected Methods
+    // Protected Methods
     // =========================================================================
 
     /**
@@ -137,8 +133,7 @@ class Plugin extends BasePlugin
         );
     }
 
-    // =========================================================================
-    // = Private Methods
+    // Private Methods
     // =========================================================================
 
     /**

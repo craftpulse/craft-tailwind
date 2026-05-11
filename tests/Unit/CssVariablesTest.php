@@ -8,7 +8,7 @@
 use craftpulse\tailwind\models\CssVariables;
 
 // =========================================================================
-// = Empty Variables
+// Empty Variables
 // =========================================================================
 
 it('returns empty string from asCss() when no variables exist', function(): void {
@@ -24,7 +24,7 @@ it('returns empty string from __toString() when no variables exist', function():
 });
 
 // =========================================================================
-// = asCss Output
+// asCss Output
 // =========================================================================
 
 it('renders a single variable as a :root CSS block', function(): void {
@@ -47,7 +47,7 @@ it('renders multiple variables as a :root CSS block', function(): void {
 });
 
 // =========================================================================
-// = __toString
+// __toString
 // =========================================================================
 
 it('casts to string using asCss', function(): void {
@@ -57,7 +57,7 @@ it('casts to string using asCss', function(): void {
 });
 
 // =========================================================================
-// = get
+// get
 // =========================================================================
 
 it('gets a variable value by name', function(): void {
@@ -79,7 +79,7 @@ it('returns null for a non-existent variable', function(): void {
 });
 
 // =========================================================================
-// = has
+// has
 // =========================================================================
 
 it('returns true for an existing variable', function(): void {
@@ -101,7 +101,7 @@ it('returns false for a non-existent variable', function(): void {
 });
 
 // =========================================================================
-// = all
+// all
 // =========================================================================
 
 it('returns all variables as an associative array', function(): void {
@@ -123,7 +123,7 @@ it('returns empty array when no variables exist', function(): void {
 });
 
 // =========================================================================
-// = isEmpty
+// isEmpty
 // =========================================================================
 
 it('returns true when empty', function(): void {
@@ -139,7 +139,7 @@ it('returns false when variables exist', function(): void {
 });
 
 // =========================================================================
-// = Key Prefixing
+// Key Prefixing
 // =========================================================================
 
 it('auto-prefixes keys without -- prefix', function(): void {
@@ -156,7 +156,7 @@ it('does not double-prefix keys that already have --', function(): void {
 });
 
 // =========================================================================
-// = Value Sanitization
+// Value Sanitization
 // =========================================================================
 
 it('rejects empty string values', function(): void {

@@ -27,8 +27,7 @@ use craft\web\Application as WebApplication;
  */
 class VersionDetector extends Component
 {
-    // =========================================================================
-    // = Const Properties
+    // Const Properties
     // =========================================================================
 
     /**
@@ -41,8 +40,7 @@ class VersionDetector extends Component
      */
     public const VERSION_4 = '4';
 
-    // =========================================================================
-    // = Private Properties
+    // Private Properties
     // =========================================================================
 
     /**
@@ -52,8 +50,7 @@ class VersionDetector extends Component
      */
     private ?string $_detectedVersion = null;
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**
@@ -130,8 +127,7 @@ class VersionDetector extends Component
         $this->_detectedVersion = null;
     }
 
-    // =========================================================================
-    // = Private Methods
+    // Private Methods
     // =========================================================================
 
     /**

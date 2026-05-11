@@ -29,7 +29,7 @@ function simpleMerge(string ...$args): string
 }
 
 // =========================================================================
-// = __toString
+// __toString
 // =========================================================================
 
 it('converts to string by merging all slots', function(): void {
@@ -51,7 +51,7 @@ it('returns empty string when no slots are defined', function(): void {
 });
 
 // =========================================================================
-// = get
+// get
 // =========================================================================
 
 it('returns the value for an existing slot', function(): void {
@@ -74,7 +74,7 @@ it('returns null for a non-existent slot', function(): void {
 });
 
 // =========================================================================
-// = override
+// override
 // =========================================================================
 
 it('returns a new instance with overridden slots', function(): void {
@@ -113,7 +113,7 @@ it('adds new slots via override', function(): void {
 });
 
 // =========================================================================
-// = extend
+// extend
 // =========================================================================
 
 it('extends existing slots by concatenation', function(): void {
@@ -151,7 +151,7 @@ it('preserves immutability on extend', function(): void {
 });
 
 // =========================================================================
-// = without
+// without
 // =========================================================================
 
 it('removes specified slots', function(): void {
@@ -188,7 +188,7 @@ it('handles removing non-existent slots gracefully', function(): void {
 });
 
 // =========================================================================
-// = merge
+// merge
 // =========================================================================
 
 it('merges additional classes with all slots', function(): void {
@@ -214,7 +214,7 @@ it('merges empty additional string', function(): void {
 });
 
 // =========================================================================
-// = toArray
+// toArray
 // =========================================================================
 
 it('returns all slots as an associative array', function(): void {
@@ -238,7 +238,7 @@ it('returns empty array when no slots exist', function(): void {
 });
 
 // =========================================================================
-// = Chaining
+// Chaining
 // =========================================================================
 
 it('supports chaining multiple operations', function(): void {

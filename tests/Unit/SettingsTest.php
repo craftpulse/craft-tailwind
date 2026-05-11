@@ -8,7 +8,7 @@
 use craftpulse\tailwind\models\Settings;
 
 // =========================================================================
-// = autoInjectAttributes — allowed-key whitelist
+// autoInjectAttributes — allowed-key whitelist
 // =========================================================================
 
 it('accepts nonce, media, and title as auto-inject attribute keys', function(): void {
@@ -43,7 +43,7 @@ it('exposes the allowed auto-inject attribute set as a constant', function(): vo
 });
 
 // =========================================================================
-// = cssVariables — save-time safety pattern
+// cssVariables — save-time safety pattern
 // =========================================================================
 
 it('accepts CSS variable values containing common safe characters', function(): void {
@@ -125,7 +125,7 @@ it('rejects CSS variable values containing newlines', function(): void {
 });
 
 // =========================================================================
-// = Other rules still apply
+// Other rules still apply
 // =========================================================================
 
 it('rejects out-of-range cacheSize', function(): void {
@@ -145,7 +145,7 @@ it('rejects unknown tailwindVersion values', function(): void {
 });
 
 // =========================================================================
-// = prefix — version-aware validation
+// prefix — version-aware validation
 // =========================================================================
 
 it('defaults prefix to null', function(): void {
@@ -216,7 +216,7 @@ it('rejects malformed prefix shapes regardless of version', function(): void {
 });
 
 // =========================================================================
-// = typography — toggle and extras lists
+// typography — toggle and extras lists
 // =========================================================================
 
 it('defaults typography to off with empty extras', function(): void {
@@ -266,7 +266,7 @@ it('tolerates empty entries in typography extras (trailing blank rows)', functio
 });
 
 // =========================================================================
-// = typography extras — single-column editable-table normalization
+// typography extras — single-column editable-table normalization
 // =========================================================================
 
 it('normalizes single-column editable-table rows for typographyExtraSizes', function(): void {
@@ -311,7 +311,7 @@ it('leaves a flat-shape typography extras list untouched', function(): void {
 });
 
 // =========================================================================
-// = CP form roundtrip — editable-table POST shape
+// CP form roundtrip — editable-table POST shape
 // =========================================================================
 
 it('normalizes the editable-table POST shape for cssVariables', function(): void {

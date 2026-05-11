@@ -8,7 +8,7 @@
 use craftpulse\tailwind\services\VersionDetector;
 
 // =========================================================================
-// = Explicit Configuration
+// Explicit Configuration
 // =========================================================================
 
 it('returns v3 when explicitly configured', function(): void {
@@ -38,7 +38,7 @@ it('skips detection entirely when version is explicit', function(): void {
 });
 
 // =========================================================================
-// = V4 Detection from CSS Files
+// V4 Detection from CSS Files
 // =========================================================================
 
 it('detects v4 from @import "tailwindcss" in CSS file', function(): void {
@@ -118,7 +118,7 @@ it('does not detect v4 from CSS without tailwind signals', function(): void {
 });
 
 // =========================================================================
-// = V3 Detection from Config Files
+// V3 Detection from Config Files
 // =========================================================================
 
 it('detects v3 from tailwind.config.js', function(): void {
@@ -199,7 +199,7 @@ it('detects v3 from a custom buildchain path', function(): void {
 });
 
 // =========================================================================
-// = Priority: CSS Path Wins Over Buildchain Path
+// Priority: CSS Path Wins Over Buildchain Path
 // =========================================================================
 
 it('prioritizes v4 CSS signals over v3 config files when both present', function(): void {
@@ -257,7 +257,7 @@ it('falls through to v3 config when CSS has no tailwind signals', function(): vo
 });
 
 // =========================================================================
-// = Unconfigured Paths Default to Root
+// Unconfigured Paths Default to Root
 // =========================================================================
 
 it('uses project root for CSS detection when cssPath is null', function(): void {
@@ -291,7 +291,7 @@ it('uses project root for config detection when buildchainPath is null', functio
 });
 
 // =========================================================================
-// = Fallback Behavior
+// Fallback Behavior
 // =========================================================================
 
 it('falls back to v4 when no detection signals are found', function(): void {
@@ -308,7 +308,7 @@ it('falls back to v4 when no detection signals are found', function(): void {
 });
 
 // =========================================================================
-// = Caching
+// Caching
 // =========================================================================
 
 it('caches detection result for the request lifecycle', function(): void {

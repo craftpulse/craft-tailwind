@@ -26,8 +26,7 @@ use yii\debug\Panel;
  */
 class TailwindPanel extends Panel
 {
-    // =========================================================================
-    // = Const Properties
+    // Const Properties
     // =========================================================================
 
     /**
@@ -37,8 +36,7 @@ class TailwindPanel extends Panel
      */
     private const VIEW_PATH = '@craftpulse/tailwind/templates/debug/';
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**

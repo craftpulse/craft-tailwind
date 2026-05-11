@@ -24,8 +24,7 @@ use Stringable;
  */
 class CssVariables implements Stringable
 {
-    // =========================================================================
-    // = Const Properties
+    // Const Properties
     // =========================================================================
 
     /**
@@ -44,8 +43,7 @@ class CssVariables implements Stringable
      */
     public const SAFE_VALUE_PATTERN = '/^[a-zA-Z0-9\-_.\#,()%\/ \'"]+$/';
 
-    // =========================================================================
-    // = Private Properties
+    // Private Properties
     // =========================================================================
 
     /**
@@ -57,8 +55,7 @@ class CssVariables implements Stringable
      */
     private array $_variables;
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**
@@ -179,8 +176,7 @@ class CssVariables implements Stringable
         return $this->_variables === [];
     }
 
-    // =========================================================================
-    // = Private Methods
+    // Private Methods
     // =========================================================================
 
     /**

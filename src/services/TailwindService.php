@@ -31,8 +31,7 @@ use Twig\Template;
  */
 class TailwindService extends Component
 {
-    // =========================================================================
-    // = Public Properties
+    // Public Properties
     // =========================================================================
 
     /**
@@ -47,8 +46,7 @@ class TailwindService extends Component
      */
     public ?Settings $settings = null;
 
-    // =========================================================================
-    // = Private Properties
+    // Private Properties
     // =========================================================================
 
     /**
@@ -135,8 +133,7 @@ class TailwindService extends Component
      */
     private bool $_recording = false;
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**
@@ -364,8 +361,7 @@ class TailwindService extends Component
         return $this->_cssVariables;
     }
 
-    // =========================================================================
-    // = Private Methods
+    // Private Methods
     // =========================================================================
 
     /**

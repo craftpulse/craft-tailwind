@@ -9,7 +9,7 @@ use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\services\TailwindService;
 
 // =========================================================================
-// = Helpers
+// Helpers
 // =========================================================================
 
 /**
@@ -29,7 +29,7 @@ function makeService(array $settings = []): TailwindService
 }
 
 // =========================================================================
-// = Service: Merge + Cache + Counters
+// Service: Merge + Cache + Counters
 // =========================================================================
 
 it('returns the merged result through the service', function(): void {
@@ -80,7 +80,7 @@ it('normalizes whitespace before cache lookup', function(): void {
 });
 
 // =========================================================================
-// = Service: LRU Eviction
+// Service: LRU Eviction
 // =========================================================================
 
 it('evicts the oldest entry when the cache reaches capacity', function(): void {
@@ -138,7 +138,7 @@ it('disables caching entirely when cacheSize is zero', function(): void {
 });
 
 // =========================================================================
-// = Service: clearCache
+// Service: clearCache
 // =========================================================================
 
 it('preserves the recording-enabled state across clearCache', function(): void {
@@ -175,7 +175,7 @@ it('rebuilds the v3 merger when the prefix changes between calls', function(): v
 });
 
 // =========================================================================
-// = Service: Prefix — v3 + v4 wire-up and input normalization
+// Service: Prefix — v3 + v4 wire-up and input normalization
 // =========================================================================
 
 it('emits the v3 fused prefix shape when prefix is set on v3', function(): void {
@@ -224,7 +224,7 @@ it('strips a trailing hyphen from the stored prefix before feeding the engine', 
 });
 
 // =========================================================================
-// = Service: Typography conflict resolution (opt-in)
+// Service: Typography conflict resolution (opt-in)
 // =========================================================================
 
 it('does not resolve prose-* conflicts when typography is off (v3)', function(): void {
@@ -364,7 +364,7 @@ it('resets cache, counters, recordings, and memoized variables on clearCache', f
 });
 
 // =========================================================================
-// = Service: CSS Variables Memoization
+// Service: CSS Variables Memoization
 // =========================================================================
 
 it('returns a memoized CssVariables instance across calls', function(): void {
@@ -383,7 +383,7 @@ it('reflects the injected settings in the memoized cssVariables container', func
 });
 
 // =========================================================================
-// = Service: Recording
+// Service: Recording
 // =========================================================================
 
 it('does not record merges when recording is disabled', function(): void {

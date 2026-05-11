@@ -20,8 +20,7 @@ use craft\base\Model;
  */
 class Settings extends Model
 {
-    // =========================================================================
-    // = Const Properties
+    // Const Properties
     // =========================================================================
 
     /**
@@ -35,8 +34,7 @@ class Settings extends Model
      */
     public const ALLOWED_AUTO_INJECT_ATTRIBUTES = ['nonce', 'media', 'title'];
 
-    // =========================================================================
-    // = Public Properties
+    // Public Properties
     // =========================================================================
 
     /**
@@ -162,8 +160,7 @@ class Settings extends Model
      */
     public array $typographyExtraColors = [];
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**
@@ -348,8 +345,7 @@ class Settings extends Model
         return parent::beforeValidate();
     }
 
-    // =========================================================================
-    // = Protected Methods
+    // Protected Methods
     // =========================================================================
 
     /**
@@ -375,8 +371,7 @@ class Settings extends Model
         return $rules;
     }
 
-    // =========================================================================
-    // = Private Methods
+    // Private Methods
     // =========================================================================
 
     /**

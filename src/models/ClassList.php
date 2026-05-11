@@ -22,8 +22,7 @@ use Stringable;
  */
 class ClassList implements Stringable
 {
-    // =========================================================================
-    // = Private Properties
+    // Private Properties
     // =========================================================================
 
     /**
@@ -40,8 +39,7 @@ class ClassList implements Stringable
      */
     private Closure $_merger;
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**

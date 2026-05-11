@@ -8,7 +8,7 @@
 use craftpulse\tailwind\models\TypographyConfig;
 
 // =========================================================================
-// = Defaults
+// Defaults
 // =========================================================================
 
 it('exposes the @tailwindcss/typography default sizes', function(): void {
@@ -27,7 +27,7 @@ it('returns the defaults when no extras are configured', function(): void {
 });
 
 // =========================================================================
-// = Extras append to defaults
+// Extras append to defaults
 // =========================================================================
 
 it('appends extra sizes to the defaults', function(): void {
@@ -65,7 +65,7 @@ it('deduplicates extras that repeat within themselves', function(): void {
 });
 
 // =========================================================================
-// = Merge-engine config shape
+// Merge-engine config shape
 // =========================================================================
 
 it('produces the classGroups shape both merge engines accept', function(): void {
@@ -95,7 +95,7 @@ it('reflects extras in the merge-engine config', function(): void {
 });
 
 // =========================================================================
-// = Signature stability and sensitivity
+// Signature stability and sensitivity
 // =========================================================================
 
 it('produces a stable signature for identical inputs', function(): void {

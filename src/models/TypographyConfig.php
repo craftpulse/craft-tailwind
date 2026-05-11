@@ -27,8 +27,7 @@ namespace craftpulse\tailwind\models;
  */
 class TypographyConfig
 {
-    // =========================================================================
-    // = Const Properties
+    // Const Properties
     // =========================================================================
 
     /**
@@ -48,8 +47,7 @@ class TypographyConfig
      */
     public const DEFAULT_COLORS = ['gray', 'slate', 'zinc', 'neutral', 'stone', 'invert'];
 
-    // =========================================================================
-    // = Private Properties
+    // Private Properties
     // =========================================================================
 
     /**
@@ -66,8 +64,7 @@ class TypographyConfig
      */
     private array $_extraColors;
 
-    // =========================================================================
-    // = Public Methods
+    // Public Methods
     // =========================================================================
 
     /**
