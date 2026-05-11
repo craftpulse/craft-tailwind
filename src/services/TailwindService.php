@@ -292,7 +292,7 @@ class TailwindService extends Component
     /**
      * Resets the request-scoped merge cache and memoized state.
      *
-     * Primarily a test seam: the test suite calls this between scenarios
+     * Internal test seam: the test suite calls this between scenarios
      * that mutate the `$settings` injection seam to force re-evaluation
      * against the new configuration. Production code in a standard Craft
      * deployment doesn't need to call this — the service is instantiated
@@ -301,6 +301,8 @@ class TailwindService extends Component
      * and typography config containers. The recording-enabled flag and
      * merger instances are intentionally preserved — the latter invalidate
      * themselves via the per-merger signature when settings change.
+     *
+     * @internal Exposed for the test suite, not for third-party callers.
      *
      * @return void
      *
