@@ -12,11 +12,13 @@ use craftpulse\tailwind\Plugin;
 // save() — null-plugin shape
 // =========================================================================
 
-// When the panel's `save()` runs without the plugin instance available
-// (e.g. before `init()` completes, or a registration ordering edge),
-// it must return a stable shape so the toolbar templates can render
-// safely. Locking the contract here means a future refactor of the
-// `save()` array shape can't silently drop a key the templates rely on.
+// `save()` carries a defensive null-plugin branch even though normal
+// Plugin::init() ordering means `Plugin::$plugin` is set before the
+// panel registers itself — so the branch is functionally unreachable
+// today. The test locks the returned shape so a future refactor that
+// changes panel registration timing (or a third-party module that pokes
+// at TailwindPanel directly) can't silently drop a key the toolbar
+// templates rely on.
 
 beforeEach(function(): void {
     Plugin::$plugin = null;
