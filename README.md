@@ -2,6 +2,8 @@
 
 Server-side Tailwind CSS class merging for Craft CMS 5 templates. Resolves conflicting utility classes, organizes styles into named slots, and injects CSS custom properties -- all without client-side JavaScript.
 
+![Screenshot](resources/img/tailwind-banner.png)
+
 ## What it solves
 
 ### Component overrides without conflicts
