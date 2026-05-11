@@ -105,11 +105,11 @@
 
 {{ forms.textField({
     label: 'Class Prefix',
-    instructions: 'Tailwind class prefix, matching your `prefix` option in `tailwind.config.js` (e.g. `tw-`). Leave blank if you do not use a prefix.',
+    instructions: 'Tailwind class prefix in bare form, no trailing hyphen. v3 projects: the plugin emits `tw-px-4` (matching your `prefix: \'tw-\'` config). v4 projects: the plugin emits `tw:px-4` (matching the v4 `prefix(tw)` CSS directive). Leave blank if you do not use a prefix.',
     id: 'prefix',
     name: 'prefix',
     value: settings.prefix,
-    placeholder: 'e.g. tw-',
+    placeholder: 'e.g. tw',
     errors: settings.getErrors('prefix'),
     disabled: overrides.prefix is defined,
 }) }}

@@ -58,15 +58,16 @@ class TailwindService extends Component
     private ?TailwindMergeV3 $_mergerV3 = null;
 
     /**
-     * The prefix the v3 merger was last initialized with.
+     * Signature describing the configuration the v3 merger was built with.
      *
-     * Tracked so a settings change (e.g. via the `$settings` injection seam)
-     * rebuilds the merger when the prefix differs, instead of silently
-     * serving merges from a stale engine configured with the old prefix.
+     * Tracked so a settings change (e.g. via the `$settings` injection seam,
+     * or between requests in a long-running runtime) rebuilds the merger
+     * when its config inputs differ, instead of silently serving merges
+     * from a stale engine.
      *
      * @var ?string
      */
-    private ?string $_mergerV3Prefix = null;
+    private ?string $_mergerV3Signature = null;
 
     /**
      * The initialized v4 merge engine instance.
@@ -74,6 +75,13 @@ class TailwindService extends Component
      * @var ?TailwindMergeV4
      */
     private ?TailwindMergeV4 $_mergerV4 = null;
+
+    /**
+     * Signature describing the configuration the v4 merger was built with.
+     *
+     * @var ?string
+     */
+    private ?string $_mergerV4Signature = null;
 
     /**
      * LRU cache of merge results.
@@ -368,28 +376,49 @@ class TailwindService extends Component
      */
     private function _getMerger(): TailwindMergeV3|TailwindMergeV4
     {
-        $version = $this->getVersion();
+        return match ($this->getVersion()) {
+            VersionDetector::VERSION_4 => $this->_getMergerV4(),
+            default => $this->_getMergerV3(),
+        };
+    }
+
+    /**
+     * Normalizes the configured prefix to its bare form.
+     *
+     * Strips a trailing hyphen so a v3 user who pasted `'tw-'` from the
+     * v3 docs ends up with the same internal value as a v4 user who
+     * typed `'tw'`. Returns an empty string when no prefix is configured.
+     *
+     * @return string The bare prefix, or '' when none is configured.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _bareNormalizedPrefix(): string
+    {
         $prefix = $this->_settings()?->prefix ?? '';
 
-        return match ($version) {
-            VersionDetector::VERSION_4 => $this->_getMergerV4(),
-            default => $this->_getMergerV3($prefix),
-        };
+        return rtrim($prefix, '-');
     }
 
     /**
      * Gets or initializes the v3 merge engine.
      *
-     * @param string $prefix The Tailwind class prefix.
+     * The v3 library expects `prefix` in the fused form (e.g. `'tw-'`),
+     * which matches the v3 class syntax `tw-px-4`. The bare prefix from
+     * settings is appended with `-` here before being passed to the engine.
      *
      * @return TailwindMergeV3 The v3 merge engine instance.
      *
      * @author CraftPulse
      * @since 5.0.0
      */
-    private function _getMergerV3(string $prefix = ''): TailwindMergeV3
+    private function _getMergerV3(): TailwindMergeV3
     {
-        if ($this->_mergerV3 !== null && $this->_mergerV3Prefix === $prefix) {
+        $prefix = $this->_bareNormalizedPrefix();
+        $signature = 'v3|prefix=' . $prefix;
+
+        if ($this->_mergerV3 !== null && $this->_mergerV3Signature === $signature) {
             return $this->_mergerV3;
         }
 
@@ -397,18 +426,22 @@ class TailwindService extends Component
 
         if ($prefix !== '') {
             $factory = $factory->withConfiguration([
-                'prefix' => $prefix,
+                'prefix' => $prefix . '-',
             ]);
         }
 
         $this->_mergerV3 = $factory->make();
-        $this->_mergerV3Prefix = $prefix;
+        $this->_mergerV3Signature = $signature;
 
         return $this->_mergerV3;
     }
 
     /**
      * Gets or initializes the v4 merge engine.
+     *
+     * The v4 library expects `prefix` in bare form (e.g. `'tw'`), which
+     * matches the v4 class syntax `tw:px-4` — the library's class-name
+     * parser appends the colon itself.
      *
      * @return TailwindMergeV4 The v4 merge engine instance.
      *
@@ -417,9 +450,21 @@ class TailwindService extends Component
      */
     private function _getMergerV4(): TailwindMergeV4
     {
-        if ($this->_mergerV4 === null) {
-            $this->_mergerV4 = new TailwindMergeV4();
+        $prefix = $this->_bareNormalizedPrefix();
+        $signature = 'v4|prefix=' . $prefix;
+
+        if ($this->_mergerV4 !== null && $this->_mergerV4Signature === $signature) {
+            return $this->_mergerV4;
         }
+
+        $config = [];
+
+        if ($prefix !== '') {
+            $config['prefix'] = $prefix;
+        }
+
+        $this->_mergerV4 = new TailwindMergeV4($config);
+        $this->_mergerV4Signature = $signature;
 
         return $this->_mergerV4;
     }

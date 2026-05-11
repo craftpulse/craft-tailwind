@@ -88,14 +88,21 @@ class Settings extends Model
     public int $cacheSize = 500;
 
     /**
-     * Tailwind class prefix (e.g., 'tw-').
+     * Tailwind class prefix, bare form (no trailing hyphen).
      *
-     * Used when the project is configured with a custom prefix
-     * in the Tailwind configuration.
+     * The plugin adapts to each Tailwind version's native syntax: v3 emits
+     * `{prefix}-{utility}` (e.g. `tw-px-4`) and v4 emits `{prefix}:{utility}`
+     * (e.g. `tw:px-4`). Store the bare prefix here (`tw`) and the merge
+     * service will append `-` for v3 or pass the bare form for v4 at
+     * call time. Leave `null` if the project uses no prefix.
      *
-     * @var string
+     * Validation rejects a trailing hyphen only when `tailwindVersion` is
+     * explicitly `'4'` (the v4 doc syntax forbids it). v3 and `'auto'`
+     * stay permissive because `'tw-'` is doc-correct for v3.
+     *
+     * @var ?string
      */
-    public string $prefix = '';
+    public ?string $prefix = null;
 
     /**
      * Whether to automatically inject CSS variables into the page `<head>`.
@@ -152,6 +159,49 @@ class Settings extends Model
     }
 
     /**
+     * Validates the `prefix` setting.
+     *
+     * Rejects values whose shape can't be a valid Tailwind prefix (must
+     * start with a letter, then letters/digits/hyphens/underscores).
+     *
+     * Additionally rejects a trailing hyphen only when `tailwindVersion`
+     * is explicitly `'4'`. Tailwind v4 expects `prefix(tw)` and emits
+     * `tw:px-4`, so a `tw-` value is unambiguously wrong on v4. For v3
+     * and `'auto'` we stay permissive — `'tw-'` is the v3-doc-canonical
+     * shape, and the merge service strips the trailing hyphen before
+     * feeding either engine.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function validatePrefix(): void
+    {
+        if ($this->prefix === null || $this->prefix === '') {
+            return;
+        }
+
+        if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $this->prefix)) {
+            $this->addError(
+                'prefix',
+                'Prefix must start with a letter and contain only letters, digits, hyphens, or underscores.',
+            );
+
+            return;
+        }
+
+        if ($this->tailwindVersion === '4' && str_ends_with($this->prefix, '-')) {
+            $this->addError(
+                'prefix',
+                'Tailwind v4 prefixes use the bare form (no trailing hyphen). '
+                . 'Type the prefix as `tw` rather than `tw-`. The plugin emits '
+                . '`tw:px-4` for v4, matching the v4 `prefix(tw)` syntax.',
+            );
+        }
+    }
+
+    /**
      * Validates the `cssVariables` map.
      *
      * Rejects non-string or empty values and values containing characters
@@ -197,6 +247,10 @@ class Settings extends Model
      * `name => value` map the rest of the plugin expects. See
      * {@see self::_normalizeEditableTableShape()} for the shape contract.
      *
+     * Also collapses an empty-string `prefix` (the CP form posts `prefix=`
+     * when blank) to `null` so storage stays consistent with the property
+     * default.
+     *
      * @author CraftPulse
      * @since 5.0.0
      */
@@ -204,6 +258,10 @@ class Settings extends Model
     {
         $this->cssVariables = $this->_normalizeEditableTableShape($this->cssVariables);
         $this->autoInjectAttributes = $this->_normalizeEditableTableShape($this->autoInjectAttributes);
+
+        if ($this->prefix === '') {
+            $this->prefix = null;
+        }
 
         return parent::beforeValidate();
     }
@@ -227,7 +285,7 @@ class Settings extends Model
         $rules[] = [['buildchainPath', 'cssPath'], 'string'];
         $rules[] = [['autoInject'], 'boolean'];
         $rules[] = [['cacheSize'], 'integer', 'min' => 0, 'max' => 10000];
-        $rules[] = [['prefix'], 'string'];
+        $rules[] = [['prefix'], 'validatePrefix'];
         $rules[] = [['autoInjectAttributes'], 'validateAutoInjectAttributes'];
         $rules[] = [['cssVariables'], 'validateCssVariables'];
 

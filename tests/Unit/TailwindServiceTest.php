@@ -153,8 +153,7 @@ it('preserves the recording-enabled state across clearCache', function(): void {
 });
 
 it('rebuilds the v3 merger when the prefix changes between calls', function(): void {
-    // Use v3 explicitly because v4 doesn't have a configurable prefix.
-    $service = makeService(['tailwindVersion' => '3', 'prefix' => '']);
+    $service = makeService(['tailwindVersion' => '3', 'prefix' => null]);
 
     $first = $service->merge('px-4 px-6');
 
@@ -165,7 +164,7 @@ it('rebuilds the v3 merger when the prefix changes between calls', function(): v
     // should treat them as opaque strings under the `tw-` prefix.
     $service->settings = new Settings([
         'tailwindVersion' => '3',
-        'prefix' => 'tw-',
+        'prefix' => 'tw',
         'cacheSize' => 500,
     ]);
     $service->clearCache();
@@ -173,6 +172,55 @@ it('rebuilds the v3 merger when the prefix changes between calls', function(): v
     $second = $service->merge('tw-px-4 tw-px-6');
 
     expect($second)->toBe('tw-px-6');
+});
+
+// =========================================================================
+// = Service: Prefix — v3 + v4 wire-up and input normalization
+// =========================================================================
+
+it('emits the v3 fused prefix shape when prefix is set on v3', function(): void {
+    $service = makeService(['tailwindVersion' => '3', 'prefix' => 'tw']);
+
+    expect($service->merge('tw-px-4 tw-px-6'))->toBe('tw-px-6');
+    // Variant before prefix, the v3 syntax shape.
+    expect($service->merge('hover:tw-bg-red-500 hover:tw-bg-blue-500'))
+        ->toBe('hover:tw-bg-blue-500');
+});
+
+it('emits the v4 variant-style prefix shape when prefix is set on v4', function(): void {
+    $service = makeService(['tailwindVersion' => '4', 'prefix' => 'tw']);
+
+    expect($service->merge('tw:px-4 tw:px-6'))->toBe('tw:px-6');
+    // Prefix is leftmost in v4, even before variants.
+    expect($service->merge('tw:hover:bg-red-500 tw:hover:bg-blue-500'))
+        ->toBe('tw:hover:bg-blue-500');
+});
+
+it('rebuilds the v4 merger when the prefix changes between calls', function(): void {
+    $service = makeService(['tailwindVersion' => '4', 'prefix' => null]);
+
+    // Without a configured prefix, the v4 lib treats `tw:` as an unknown
+    // modifier — the underlying `px-{4,6}` still resolves, so we have to
+    // probe with a class shape that only merges once the prefix is wired.
+    expect($service->merge('px-4 px-6'))->toBe('px-6');
+
+    $service->settings = new Settings([
+        'tailwindVersion' => '4',
+        'prefix' => 'tw',
+        'cacheSize' => 500,
+    ]);
+    $service->clearCache();
+
+    expect($service->merge('tw:px-4 tw:px-6'))->toBe('tw:px-6');
+});
+
+it('strips a trailing hyphen from the stored prefix before feeding the engine', function(): void {
+    // v3 doc-canonical form is `'tw-'`. After normalization the v3 lib
+    // receives `'tw-'` (bare + appended `-`), not `'tw--'`, so prefixed
+    // classes merge cleanly without double hyphens leaking through.
+    $service = makeService(['tailwindVersion' => '3', 'prefix' => 'tw-']);
+
+    expect($service->merge('tw-px-4 tw-px-6'))->toBe('tw-px-6');
 });
 
 it('resets cache, counters, recordings, and memoized variables on clearCache', function(): void {

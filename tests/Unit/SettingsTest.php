@@ -145,6 +145,77 @@ it('rejects unknown tailwindVersion values', function(): void {
 });
 
 // =========================================================================
+// = prefix — version-aware validation
+// =========================================================================
+
+it('defaults prefix to null', function(): void {
+    $settings = new Settings();
+
+    expect($settings->prefix)->toBeNull();
+});
+
+it('collapses an empty-string prefix to null on validate', function(): void {
+    // The CP form posts `prefix=` (empty string) when the field is blank.
+    $settings = new Settings(['prefix' => '']);
+
+    $settings->validate();
+
+    expect($settings->prefix)->toBeNull();
+    expect($settings->getErrors('prefix'))->toBe([]);
+});
+
+it('accepts a bare prefix on any version', function(): void {
+    foreach (['auto', '3', '4'] as $version) {
+        $settings = new Settings(['tailwindVersion' => $version, 'prefix' => 'tw']);
+
+        $settings->validate();
+
+        expect($settings->getErrors('prefix'))->toBe([]);
+    }
+});
+
+it('accepts a trailing-hyphen prefix on v3 (doc-canonical form)', function(): void {
+    $settings = new Settings(['tailwindVersion' => '3', 'prefix' => 'tw-']);
+
+    $settings->validate();
+
+    expect($settings->getErrors('prefix'))->toBe([]);
+});
+
+it('accepts a trailing-hyphen prefix on auto (permissive, version unknown)', function(): void {
+    // `auto` detection happens at runtime and may resolve to either v3 or
+    // v4. We stay permissive here so we don't reach into the filesystem
+    // from a model validator. The service-level normalization handles it.
+    $settings = new Settings(['tailwindVersion' => 'auto', 'prefix' => 'tw-']);
+
+    $settings->validate();
+
+    expect($settings->getErrors('prefix'))->toBe([]);
+});
+
+it('rejects a trailing-hyphen prefix on explicit v4', function(): void {
+    $settings = new Settings(['tailwindVersion' => '4', 'prefix' => 'tw-']);
+
+    $settings->validate();
+    $errors = $settings->getErrors('prefix');
+
+    expect($errors)->not->toBeEmpty();
+    expect($errors[0])->toContain('v4');
+    expect($errors[0])->toContain('bare');
+});
+
+it('rejects malformed prefix shapes regardless of version', function(): void {
+    // Leading digit, special characters, etc. — bad on any version.
+    foreach (['1tw', 'tw:', 'tw px', '!tw'] as $bad) {
+        $settings = new Settings(['tailwindVersion' => '3', 'prefix' => $bad]);
+
+        $settings->validate();
+
+        expect($settings->getErrors('prefix'))->not->toBeEmpty();
+    }
+});
+
+// =========================================================================
 // = CP form roundtrip — editable-table POST shape
 // =========================================================================
 
