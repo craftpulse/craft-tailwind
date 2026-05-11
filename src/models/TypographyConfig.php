@@ -184,8 +184,8 @@ class TypographyConfig
     {
         return [
             'classGroups' => [
-                'prose-size' => [['prose' => $this->getSizes()]],
-                'prose-color' => [['prose' => $this->getColors()]],
+                'prose-size' => [['prose' => $this->_sizes]],
+                'prose-color' => [['prose' => $this->_colors]],
             ],
         ];
     }
