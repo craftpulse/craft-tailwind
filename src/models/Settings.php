@@ -351,6 +351,8 @@ class Settings extends Model
     /**
      * @inheritdoc
      *
+     * @return array<int, array<int|string, mixed>>
+     *
      * @author CraftPulse
      * @since 5.0.0
      */
