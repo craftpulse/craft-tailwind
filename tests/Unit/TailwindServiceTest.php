@@ -321,6 +321,27 @@ it('rebuilds the merger when typography extras change (v4)', function(): void {
     expect($service->merge('prose prose-lg prose-huge'))->toBe('prose prose-huge');
 });
 
+it('exposes the active typography config via typographyConfig()', function(): void {
+    // Consumed by TailwindPanel::save() — the panel branches on null vs
+    // instance to render either "disabled" or the resolved size/color
+    // lists, so the accessor's contract is part of the public surface.
+    $off = makeService(['typography' => false]);
+
+    expect($off->typographyConfig())->toBeNull();
+
+    $on = makeService([
+        'typography' => true,
+        'typographyExtraSizes' => ['huge'],
+        'typographyExtraColors' => ['mybrand'],
+    ]);
+
+    $config = $on->typographyConfig();
+
+    expect($config)->not->toBeNull();
+    expect($config->getExtraSizes())->toBe(['huge']);
+    expect($config->getExtraColors())->toBe(['mybrand']);
+});
+
 it('resets cache, counters, recordings, and memoized variables on clearCache', function(): void {
     $service = makeService(['cssVariables' => ['--brand' => '#222']]);
 

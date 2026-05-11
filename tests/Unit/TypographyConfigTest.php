@@ -118,3 +118,12 @@ it('produces a different signature when extra colors change', function(): void {
 
     expect($a->signature())->not->toBe($b->signature());
 });
+
+it('produces the same signature regardless of extras order', function(): void {
+    // Reordering rows in the CP editable-table shouldn't trigger a merger
+    // rebuild — order has no semantic meaning in a conflict group.
+    $a = new TypographyConfig(extraSizes: ['huge', 'compact'], extraColors: ['mybrand', 'marketing']);
+    $b = new TypographyConfig(extraSizes: ['compact', 'huge'], extraColors: ['marketing', 'mybrand']);
+
+    expect($a->signature())->toBe($b->signature());
+});
