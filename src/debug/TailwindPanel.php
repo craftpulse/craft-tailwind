@@ -136,8 +136,6 @@ class TailwindPanel extends Panel
 
         $cacheHits = $service->getCacheHitCount();
         $cacheMisses = $service->getCacheMissCount();
-        $typography = $service->typographyConfig();
-
         return [
             'merges' => $merges,
             'totalCalls' => $cacheHits + $cacheMisses,
@@ -146,12 +144,7 @@ class TailwindPanel extends Panel
             'cacheMisses' => $cacheMisses,
             'cacheSize' => $service->getCacheCount(),
             'version' => $service->getVersion(),
-            'typography' => $typography === null ? null : [
-                'sizes' => $typography->getSizes(),
-                'colors' => $typography->getColors(),
-                'extraSizes' => $typography->getExtraSizes(),
-                'extraColors' => $typography->getExtraColors(),
-            ],
+            'typography' => $service->typographyConfig()?->toPanelData(),
         ];
     }
 }

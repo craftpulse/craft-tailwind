@@ -64,6 +64,33 @@ class TypographyConfig
      */
     private array $_extraColors;
 
+    /**
+     * Resolved size list (defaults followed by deduped extras).
+     *
+     * Pre-computed in the constructor because the inputs are immutable
+     * and the merger getters read this every cache miss.
+     *
+     * @var array<int, string>
+     */
+    private array $_sizes;
+
+    /**
+     * Resolved color list (defaults followed by deduped extras).
+     *
+     * @var array<int, string>
+     */
+    private array $_colors;
+
+    /**
+     * Cached signature for {@see self::signature()}.
+     *
+     * Computed lazily on first access and reused for the lifetime of the
+     * instance, since the inputs are immutable.
+     *
+     * @var ?string
+     */
+    private ?string $_signature = null;
+
     // Public Methods
     // =========================================================================
 
@@ -80,6 +107,8 @@ class TypographyConfig
     {
         $this->_extraSizes = array_values(array_unique($extraSizes));
         $this->_extraColors = array_values(array_unique($extraColors));
+        $this->_sizes = array_values(array_unique([...self::DEFAULT_SIZES, ...$this->_extraSizes]));
+        $this->_colors = array_values(array_unique([...self::DEFAULT_COLORS, ...$this->_extraColors]));
     }
 
     /**
@@ -92,7 +121,7 @@ class TypographyConfig
      */
     public function getSizes(): array
     {
-        return array_values(array_unique([...self::DEFAULT_SIZES, ...$this->_extraSizes]));
+        return $this->_sizes;
     }
 
     /**
@@ -105,7 +134,7 @@ class TypographyConfig
      */
     public function getColors(): array
     {
-        return array_values(array_unique([...self::DEFAULT_COLORS, ...$this->_extraColors]));
+        return $this->_colors;
     }
 
     /**
@@ -180,11 +209,38 @@ class TypographyConfig
      */
     public function signature(): string
     {
-        $sizes = $this->getSizes();
-        $colors = $this->getColors();
+        if ($this->_signature !== null) {
+            return $this->_signature;
+        }
+
+        $sizes = $this->_sizes;
+        $colors = $this->_colors;
         sort($sizes);
         sort($colors);
 
-        return sha1(implode(',', $sizes) . '|' . implode(',', $colors));
+        return $this->_signature = sha1(implode(',', $sizes) . '|' . implode(',', $colors));
+    }
+
+    /**
+     * Returns a debug-panel snapshot of the resolved configuration.
+     *
+     * Bundles the full lists and the user-added extras into the shape
+     * {@see \craftpulse\tailwind\debug\TailwindPanel::save()} embeds in
+     * its panel data. Centralized here so the panel doesn't need to know
+     * the internal structure.
+     *
+     * @return array{sizes: array<int, string>, colors: array<int, string>, extraSizes: array<int, string>, extraColors: array<int, string>}
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function toPanelData(): array
+    {
+        return [
+            'sizes' => $this->_sizes,
+            'colors' => $this->_colors,
+            'extraSizes' => $this->_extraSizes,
+            'extraColors' => $this->_extraColors,
+        ];
     }
 }
