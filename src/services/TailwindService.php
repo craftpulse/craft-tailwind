@@ -115,6 +115,25 @@ class TailwindService extends Component
     private ?CssVariables $_cssVariables = null;
 
     /**
+     * Memoized typography conflict-group config for the current request.
+     *
+     * Holds the cached `TypographyConfig` after the first call to
+     * `_typographyConfig()`; `null` either means "not yet computed" or
+     * "computed and resolved to null (feature disabled)". The
+     * `$_typographyResolved` flag disambiguates the two.
+     *
+     * @var ?TypographyConfig
+     */
+    private ?TypographyConfig $_typography = null;
+
+    /**
+     * Whether the typography config has been resolved this request.
+     *
+     * @var bool
+     */
+    private bool $_typographyResolved = false;
+
+    /**
      * Recorded merge operations for the debug panel.
      *
      * Each entry is keyed by the merge input string for deduplication.
@@ -264,9 +283,11 @@ class TailwindService extends Component
      * Useful in long-running runtimes (queue workers, Octane, RoadRunner)
      * where the service instance survives across requests. Resets the LRU
      * cache, hit/miss counters, recorded merges, and the memoized CSS
-     * variables container. The recording-enabled flag is intentionally
-     * preserved so the debug module's once-per-process registration stays
-     * in effect across requests.
+     * variables / typography config containers. The recording-enabled flag
+     * is intentionally preserved so the debug module's once-per-process
+     * registration stays in effect across requests. Merger instances are
+     * also intentionally retained — they invalidate themselves via the
+     * per-merger signature when settings change.
      *
      * @return void
      *
@@ -279,6 +300,8 @@ class TailwindService extends Component
         $this->_cacheHitCount = 0;
         $this->_cacheMissCount = 0;
         $this->_cssVariables = null;
+        $this->_typography = null;
+        $this->_typographyResolved = false;
         $this->_merges = [];
     }
 
@@ -417,11 +440,13 @@ class TailwindService extends Component
     }
 
     /**
-     * Builds the typography conflict-group config when the setting is on.
+     * Returns the typography conflict-group config for the current request.
      *
-     * Returns `null` when typography conflict resolution is disabled, so
-     * callers can short-circuit cache-key construction without paying for
-     * the always-empty signature.
+     * Memoized so the merger getters (called once per uncached merge) reuse
+     * the same instance instead of allocating a fresh `TypographyConfig`
+     * every call. Returns `null` when the `typography` setting is off.
+     * Call `clearCache()` to invalidate in long-running runtimes after a
+     * settings change.
      *
      * @return ?TypographyConfig The configured typography conflict groups, or null when off.
      *
@@ -430,16 +455,22 @@ class TailwindService extends Component
      */
     private function _typographyConfig(): ?TypographyConfig
     {
-        $settings = $this->_settings();
-
-        if ($settings === null || !$settings->typography) {
-            return null;
+        if ($this->_typographyResolved) {
+            return $this->_typography;
         }
 
-        return new TypographyConfig(
-            $settings->typographyExtraSizes,
-            $settings->typographyExtraColors,
-        );
+        $settings = $this->_settings();
+
+        if ($settings !== null && $settings->typography) {
+            $this->_typography = new TypographyConfig(
+                $settings->typographyExtraSizes,
+                $settings->typographyExtraColors,
+            );
+        }
+
+        $this->_typographyResolved = true;
+
+        return $this->_typography;
     }
 
     /**

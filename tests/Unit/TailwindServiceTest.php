@@ -342,6 +342,21 @@ it('exposes the active typography config via typographyConfig()', function(): vo
     expect($config->getExtraColors())->toBe(['mybrand']);
 });
 
+it('memoizes typographyConfig across calls and invalidates on clearCache', function(): void {
+    $service = makeService(['typography' => true]);
+
+    $first = $service->typographyConfig();
+    $second = $service->typographyConfig();
+
+    expect($first)->toBe($second);
+
+    $service->clearCache();
+    $third = $service->typographyConfig();
+
+    // Same shape, but a fresh instance — `toBe` on objects is identity-strict.
+    expect($third)->not->toBe($first);
+});
+
 it('resets cache, counters, recordings, and memoized variables on clearCache', function(): void {
     $service = makeService(['cssVariables' => ['--brand' => '#222']]);
 
