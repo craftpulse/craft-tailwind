@@ -37,12 +37,12 @@ class TailwindService extends Component
     /**
      * Maximum stack-frame count to scan when resolving a Twig template call site.
      *
-     * Twig template rendering chains can get deep (layouts including layouts
-     * including macros including blocks); a 50-frame cap leaves headroom over
-     * typical depths while bounding the cost of the recording path, which
-     * runs only when the Yii debug module is loaded.
+     * The recording path only runs when the Yii debug module is loaded, so
+     * the cost of the cap is paid only in dev. Raise this if a reported
+     * case shows the originating template missing from the panel because
+     * the Twig frame sits deeper than the current limit.
      */
-    private const CALL_SITE_TRACE_DEPTH = 50;
+    private const CALL_SITE_TRACE_DEPTH = 25;
 
     // Public Properties
     // =========================================================================
