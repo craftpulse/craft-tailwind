@@ -223,6 +223,104 @@ it('strips a trailing hyphen from the stored prefix before feeding the engine', 
     expect($service->merge('tw-px-4 tw-px-6'))->toBe('tw-px-6');
 });
 
+// =========================================================================
+// = Service: Typography conflict resolution (opt-in)
+// =========================================================================
+
+it('does not resolve prose-* conflicts when typography is off (v3)', function(): void {
+    $service = makeService(['tailwindVersion' => '3', 'typography' => false]);
+
+    // Without the typography conflict groups wired, both prose-sm and
+    // prose-lg are unknown classes to the merger and pass through.
+    expect($service->merge('prose prose-sm prose-lg'))->toBe('prose prose-sm prose-lg');
+});
+
+it('does not resolve prose-* conflicts when typography is off (v4)', function(): void {
+    $service = makeService(['tailwindVersion' => '4', 'typography' => false]);
+
+    expect($service->merge('prose prose-sm prose-lg'))->toBe('prose prose-sm prose-lg');
+});
+
+it('resolves prose-size last-wins when typography is on (v3 and v4)', function(): void {
+    foreach (['3', '4'] as $version) {
+        $service = makeService(['tailwindVersion' => $version, 'typography' => true]);
+
+        expect($service->merge('prose prose-sm prose-lg'))->toBe('prose prose-lg');
+        expect($service->merge('prose prose-base prose-sm prose-lg'))->toBe('prose prose-lg');
+    }
+});
+
+it('resolves prose-color last-wins when typography is on (v3 and v4)', function(): void {
+    foreach (['3', '4'] as $version) {
+        $service = makeService(['tailwindVersion' => $version, 'typography' => true]);
+
+        expect($service->merge('prose prose-slate prose-invert'))->toBe('prose prose-invert');
+    }
+});
+
+it('keeps prose-size and prose-color orthogonal when both are present (v3 and v4)', function(): void {
+    foreach (['3', '4'] as $version) {
+        $service = makeService(['tailwindVersion' => $version, 'typography' => true]);
+
+        // A size and a color are different concerns — neither should
+        // evict the other. The input order is preserved.
+        expect($service->merge('prose prose-lg prose-invert'))->toBe('prose prose-lg prose-invert');
+    }
+});
+
+it('resolves custom typography suffixes registered via extras (v3 and v4)', function(): void {
+    foreach (['3', '4'] as $version) {
+        $service = makeService([
+            'tailwindVersion' => $version,
+            'typography' => true,
+            'typographyExtraSizes' => ['huge'],
+            'typographyExtraColors' => ['mybrand'],
+        ]);
+
+        // Custom suffix wins against a default — the conflict group now
+        // recognizes both as size-class members.
+        expect($service->merge('prose prose-lg prose-huge'))->toBe('prose prose-huge');
+        expect($service->merge('prose prose-slate prose-mybrand'))->toBe('prose prose-mybrand');
+    }
+});
+
+it('rebuilds the merger when the typography setting toggles (v3)', function(): void {
+    $service = makeService(['tailwindVersion' => '3', 'typography' => false]);
+
+    expect($service->merge('prose prose-sm prose-lg'))->toBe('prose prose-sm prose-lg');
+
+    // Flip the setting; a stale merger would still passthrough.
+    $service->settings = new Settings([
+        'tailwindVersion' => '3',
+        'typography' => true,
+        'cacheSize' => 500,
+    ]);
+    $service->clearCache();
+
+    expect($service->merge('prose prose-sm prose-lg'))->toBe('prose prose-lg');
+});
+
+it('rebuilds the merger when typography extras change (v4)', function(): void {
+    $service = makeService([
+        'tailwindVersion' => '4',
+        'typography' => true,
+        'typographyExtraSizes' => [],
+    ]);
+
+    // Without `huge` in the size group, `prose-huge` is unknown and passes.
+    expect($service->merge('prose prose-lg prose-huge'))->toBe('prose prose-lg prose-huge');
+
+    $service->settings = new Settings([
+        'tailwindVersion' => '4',
+        'typography' => true,
+        'typographyExtraSizes' => ['huge'],
+        'cacheSize' => 500,
+    ]);
+    $service->clearCache();
+
+    expect($service->merge('prose prose-lg prose-huge'))->toBe('prose prose-huge');
+});
+
 it('resets cache, counters, recordings, and memoized variables on clearCache', function(): void {
     $service = makeService(['cssVariables' => ['--brand' => '#222']]);
 

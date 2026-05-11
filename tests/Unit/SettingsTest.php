@@ -216,6 +216,101 @@ it('rejects malformed prefix shapes regardless of version', function(): void {
 });
 
 // =========================================================================
+// = typography — toggle and extras lists
+// =========================================================================
+
+it('defaults typography to off with empty extras', function(): void {
+    $settings = new Settings();
+
+    expect($settings->typography)->toBeFalse();
+    expect($settings->typographyExtraSizes)->toBe([]);
+    expect($settings->typographyExtraColors)->toBe([]);
+});
+
+it('accepts valid suffix entries in typographyExtraSizes and typographyExtraColors', function(): void {
+    $settings = new Settings([
+        'typography' => true,
+        'typographyExtraSizes' => ['huge', 'compact'],
+        'typographyExtraColors' => ['mybrand', 'marketing-loud'],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('typographyExtraSizes'))->toBe([]);
+    expect($settings->getErrors('typographyExtraColors'))->toBe([]);
+});
+
+it('rejects typography extras entries with invalid suffix shapes', function(): void {
+    $settings = new Settings([
+        'typographyExtraSizes' => ['1huge', 'okay'],
+        'typographyExtraColors' => ['my:brand', 'fine'],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('typographyExtraSizes'))->not->toBeEmpty();
+    expect($settings->getErrors('typographyExtraSizes')[0])->toContain('1huge');
+
+    expect($settings->getErrors('typographyExtraColors'))->not->toBeEmpty();
+    expect($settings->getErrors('typographyExtraColors')[0])->toContain('my:brand');
+});
+
+it('tolerates empty entries in typography extras (trailing blank rows)', function(): void {
+    $settings = new Settings([
+        'typographyExtraSizes' => ['huge', '', 'compact'],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('typographyExtraSizes'))->toBe([]);
+});
+
+// =========================================================================
+// = typography extras — single-column editable-table normalization
+// =========================================================================
+
+it('normalizes single-column editable-table rows for typographyExtraSizes', function(): void {
+    // Mirrors what `forms.editableTableField` posts when the column key
+    // is `suffix`. The model normalizes to a flat numeric list of strings.
+    $settings = new Settings([
+        'typographyExtraSizes' => [
+            'row1' => ['suffix' => 'huge'],
+            'row2' => ['suffix' => 'compact'],
+        ],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->getErrors('typographyExtraSizes'))->toBe([]);
+    expect($settings->typographyExtraSizes)->toBe(['huge', 'compact']);
+});
+
+it('drops single-column rows with no value on normalization', function(): void {
+    $settings = new Settings([
+        'typographyExtraColors' => [
+            'row1' => ['suffix' => 'mybrand'],
+            'row2' => ['suffix' => ''],
+            'row3' => ['suffix' => 'marketing'],
+        ],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->typographyExtraColors)->toBe(['mybrand', 'marketing']);
+});
+
+it('leaves a flat-shape typography extras list untouched', function(): void {
+    // Constructor injection from code or `config/tailwind.php`.
+    $settings = new Settings([
+        'typographyExtraSizes' => ['huge', 'compact'],
+    ]);
+
+    $settings->validate();
+
+    expect($settings->typographyExtraSizes)->toBe(['huge', 'compact']);
+});
+
+// =========================================================================
 // = CP form roundtrip — editable-table POST shape
 // =========================================================================
 

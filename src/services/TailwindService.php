@@ -12,6 +12,7 @@ use craft\base\Component;
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\models\Settings;
+use craftpulse\tailwind\models\TypographyConfig;
 use craftpulse\tailwind\Plugin;
 
 use TailwindMerge\TailwindMerge as TailwindMergeV3;
@@ -325,6 +326,24 @@ class TailwindService extends Component
     }
 
     /**
+     * Returns the resolved typography conflict-group configuration.
+     *
+     * Mirrors the value the merger getters use internally, exposed so
+     * the debug toolbar panel can surface what conflict groups are
+     * currently active. Returns `null` when the `typography` setting
+     * is off.
+     *
+     * @return ?TypographyConfig The typography conflict groups, or null when disabled.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function typographyConfig(): ?TypographyConfig
+    {
+        return $this->_typographyConfig();
+    }
+
+    /**
      * Returns the configured CSS variables as a CssVariables instance.
      *
      * Memoized for the request lifetime. Call `clearCache()` to invalidate
@@ -402,6 +421,32 @@ class TailwindService extends Component
     }
 
     /**
+     * Builds the typography conflict-group config when the setting is on.
+     *
+     * Returns `null` when typography conflict resolution is disabled, so
+     * callers can short-circuit cache-key construction without paying for
+     * the always-empty signature.
+     *
+     * @return ?TypographyConfig The configured typography conflict groups, or null when off.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _typographyConfig(): ?TypographyConfig
+    {
+        $settings = $this->_settings();
+
+        if ($settings === null || !$settings->typography) {
+            return null;
+        }
+
+        return new TypographyConfig(
+            $settings->typographyExtraSizes,
+            $settings->typographyExtraColors,
+        );
+    }
+
+    /**
      * Gets or initializes the v3 merge engine.
      *
      * The v3 library expects `prefix` in the fused form (e.g. `'tw-'`),
@@ -416,18 +461,18 @@ class TailwindService extends Component
     private function _getMergerV3(): TailwindMergeV3
     {
         $prefix = $this->_bareNormalizedPrefix();
-        $signature = 'v3|prefix=' . $prefix;
+        $typography = $this->_typographyConfig();
+        $signature = 'v3|prefix=' . $prefix . '|typography=' . ($typography?->signature() ?? '');
 
         if ($this->_mergerV3 !== null && $this->_mergerV3Signature === $signature) {
             return $this->_mergerV3;
         }
 
+        $config = $this->_buildMergerConfig($prefix, $typography, fusedV3Prefix: true);
         $factory = TailwindMergeV3::factory();
 
-        if ($prefix !== '') {
-            $factory = $factory->withConfiguration([
-                'prefix' => $prefix . '-',
-            ]);
+        if ($config !== []) {
+            $factory = $factory->withConfiguration($config);
         }
 
         $this->_mergerV3 = $factory->make();
@@ -451,22 +496,50 @@ class TailwindService extends Component
     private function _getMergerV4(): TailwindMergeV4
     {
         $prefix = $this->_bareNormalizedPrefix();
-        $signature = 'v4|prefix=' . $prefix;
+        $typography = $this->_typographyConfig();
+        $signature = 'v4|prefix=' . $prefix . '|typography=' . ($typography?->signature() ?? '');
 
         if ($this->_mergerV4 !== null && $this->_mergerV4Signature === $signature) {
             return $this->_mergerV4;
         }
 
-        $config = [];
-
-        if ($prefix !== '') {
-            $config['prefix'] = $prefix;
-        }
+        $config = $this->_buildMergerConfig($prefix, $typography, fusedV3Prefix: false);
 
         $this->_mergerV4 = new TailwindMergeV4($config);
         $this->_mergerV4Signature = $signature;
 
         return $this->_mergerV4;
+    }
+
+    /**
+     * Builds the shared merge-engine configuration array.
+     *
+     * Both underlying libraries accept the same `['prefix' => ..., 'classGroups' => ...]`
+     * shape; the only divergence is `prefix` value semantics (v3 wants the
+     * fused trailing-hyphen form, v4 wants the bare form).
+     *
+     * @param string $prefix The bare prefix; '' when none is configured.
+     * @param ?TypographyConfig $typography The typography conflict-group config, or null when disabled.
+     * @param bool $fusedV3Prefix `true` to append `-` to the prefix for the v3 library.
+     *
+     * @return array<string, mixed> The config array, or `[]` when neither knob is engaged.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _buildMergerConfig(string $prefix, ?TypographyConfig $typography, bool $fusedV3Prefix): array
+    {
+        $config = [];
+
+        if ($prefix !== '') {
+            $config['prefix'] = $fusedV3Prefix ? $prefix . '-' : $prefix;
+        }
+
+        if ($typography !== null) {
+            $config = array_merge_recursive($config, $typography->toMergeConfig());
+        }
+
+        return $config;
     }
 
     /**

@@ -98,7 +98,12 @@ class TailwindPanel extends Panel
      * `count` field tracks dedupe-by-input only when recording is on, so
      * `sum(count)` is generally lower than `totalCalls`.
      *
-     * @return array{merges: array<int, array<string, mixed>>, totalCalls: int, resolved: int, cacheHits: int, cacheMisses: int, cacheSize: int, version: string}
+     * The `typography` key is `null` when typography conflict resolution
+     * is disabled; otherwise it carries the resolved size/color suffix
+     * lists so the panel can show users exactly which conflict groups
+     * the merger is currently honoring.
+     *
+     * @return array{merges: array<int, array<string, mixed>>, totalCalls: int, resolved: int, cacheHits: int, cacheMisses: int, cacheSize: int, version: string, typography: ?array{sizes: array<int, string>, colors: array<int, string>, extraSizes: array<int, string>, extraColors: array<int, string>}}
      *
      * @author CraftPulse
      * @since 5.0.0
@@ -116,6 +121,7 @@ class TailwindPanel extends Panel
                 'cacheMisses' => 0,
                 'cacheSize' => 0,
                 'version' => 'unknown',
+                'typography' => null,
             ];
         }
 
@@ -132,6 +138,7 @@ class TailwindPanel extends Panel
 
         $cacheHits = $service->getCacheHitCount();
         $cacheMisses = $service->getCacheMissCount();
+        $typography = $service->typographyConfig();
 
         return [
             'merges' => $merges,
@@ -141,6 +148,12 @@ class TailwindPanel extends Panel
             'cacheMisses' => $cacheMisses,
             'cacheSize' => $service->getCacheCount(),
             'version' => $service->getVersion(),
+            'typography' => $typography === null ? null : [
+                'sizes' => $typography->getSizes(),
+                'colors' => $typography->getColors(),
+                'extraSizes' => $typography->getExtraSizes(),
+                'extraColors' => $typography->getExtraColors(),
+            ],
         ];
     }
 }

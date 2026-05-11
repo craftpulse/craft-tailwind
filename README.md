@@ -105,8 +105,17 @@ return [
     // LRU cache size for merge results (0-10000)
     'cacheSize' => 500,
 
-    // Tailwind class prefix, matching your tailwind.config.js prefix option
-    'prefix' => '',
+    // Tailwind class prefix, bare form (no trailing hyphen).
+    // v3 emits `tw-px-4`; v4 emits `tw:px-4`. null = no prefix.
+    'prefix' => null,
+
+    // Resolve `@tailwindcss/typography` conflicts (prose-sm vs prose-lg etc.)
+    'typography' => false,
+
+    // Custom prose-{suffix} additions beyond the defaults the typography
+    // plugin ships. Add suffixes you've registered yourself.
+    'typographyExtraSizes' => [],
+    'typographyExtraColors' => [],
 
     // Auto-inject CSS variables into every site page's <head>
     'autoInject' => false,
@@ -300,18 +309,35 @@ Use it to answer questions like "why is `bg-red-500` not appearing on the page?"
 
 The panel has no overhead outside of debug-enabled requests — data collection only runs when the debug module is loaded.
 
-## Typography plugin compatibility
+## Typography plugin support
 
-The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box. Both underlying merge engines understand `prose` and its modifiers as first-class utilities, so size and theme conflicts resolve correctly:
+The `@tailwindcss/typography` plugin registers `prose-{size}` and `prose-{theme}` classes that neither underlying merge engine knows about by default — so out of the box `prose prose-sm prose-lg` passes through unchanged. The plugin's `typography` setting opts you into a curated conflict-group config that covers the suffixes shipped by `@tailwindcss/typography` 0.5.x:
+
+- **Sizes**: `sm`, `base`, `lg`, `xl`, `2xl`
+- **Colors / themes**: `gray`, `slate`, `zinc`, `neutral`, `stone`, `invert`
+
+Enable it in plugin settings or in `config/tailwind.php`:
+
+```php
+return [
+    'typography' => true,
+];
+```
+
+Now size and theme conflicts resolve last-wins, while size and color stay orthogonal:
 
 ```twig
-{# Size modifiers resolve last-wins #}
+{# Size last-wins #}
 {{ craft.tailwind.merge('prose prose-sm', 'prose-lg') }}
 {# Result: prose prose-lg #}
 
-{# Light/dark variants resolve last-wins #}
+{# Theme last-wins #}
 {{ craft.tailwind.merge('prose prose-slate', 'prose-invert') }}
 {# Result: prose prose-invert #}
+
+{# Size + color stay together — different concerns #}
+{{ craft.tailwind.merge('prose prose-lg', 'prose-invert') }}
+{# Result: prose prose-lg prose-invert #}
 ```
 
 A typical rich-text area with editor-controlled size:
@@ -324,7 +350,25 @@ A typical rich-text area with editor-controlled size:
 </article>
 ```
 
-No special configuration required — typography utilities follow the same merge rules as every other Tailwind utility.
+### Custom typography themes
+
+If you've registered your own `prose-*` themes — for example a brand variant via an `@utility prose-mybrand { ... }` block on v4, or a `theme.extend.typography.mybrand` entry on v3 — add the suffixes to the extras lists so the merger treats them as conflict-group members:
+
+```php
+return [
+    'typography' => true,
+    'typographyExtraSizes'  => ['huge'],
+    'typographyExtraColors' => ['mybrand', 'marketing'],
+];
+```
+
+With the extras above, `merge('prose prose-slate', 'prose-mybrand')` resolves to `prose prose-mybrand`. Suffixes are stored without the `prose-` prefix.
+
+You can also manage the toggle and extras through the CP settings page (under **Typography**). Defaults are always included — extras only need entries for suffixes you've registered yourself.
+
+### Why opt-in?
+
+Resolving `prose-*` conflicts by default would surprise users who use the typography plugin alongside their own `prose-*` naming conventions, or who don't use the typography plugin at all and would rather see their `prose-*` classes pass through unchanged. The toggle keeps the default behavior predictable and lets typography users enable resolution explicitly.
 
 ## API reference
 

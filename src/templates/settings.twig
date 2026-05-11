@@ -131,6 +131,77 @@
 
 <hr>
 
+<h2>Typography</h2>
+
+<p>Optional support for <a href="https://github.com/tailwindlabs/tailwindcss-typography" target="_blank" rel="noopener">@tailwindcss/typography</a>. When enabled, the merger resolves <code>prose-{size}</code> and <code>prose-{theme}</code> conflicts as mutually-exclusive utility groups — so <code>prose prose-sm prose-lg</code> collapses to <code>prose prose-lg</code>.</p>
+
+<p>Defaults cover the suffixes shipped by the typography plugin itself (sizes: <code>sm</code>, <code>base</code>, <code>lg</code>, <code>xl</code>, <code>2xl</code>; colors: <code>gray</code>, <code>slate</code>, <code>zinc</code>, <code>neutral</code>, <code>stone</code>, <code>invert</code>). Use the lists below to register any custom suffixes you've added yourself.</p>
+
+{{ forms.lightswitchField({
+    label: 'Resolve Typography Conflicts',
+    instructions: 'When enabled, `prose-{size}` and `prose-{theme}` classes merge as conflict groups.',
+    id: 'typography',
+    name: 'typography',
+    on: settings.typography,
+    errors: settings.getErrors('typography'),
+    disabled: overrides.typography is defined,
+}) }}
+{{ overrideWarning('typography', overrides) }}
+
+{% set sizeRows = [] %}
+{% for suffix in settings.typographyExtraSizes %}
+    {% set sizeRows = sizeRows|merge([{ suffix: suffix }]) %}
+{% endfor %}
+
+{{ forms.editableTableField({
+    label: 'Extra Sizes',
+    instructions: 'Custom `prose-{size}` suffixes beyond the defaults. Enter without the `prose-` prefix (e.g. `huge` becomes `prose-huge`).',
+    id: 'typographyExtraSizes',
+    name: 'typographyExtraSizes',
+    cols: {
+        suffix: {
+            heading: 'Suffix',
+            type: 'singleline',
+            placeholder: 'huge',
+        },
+    },
+    rows: sizeRows,
+    errors: settings.getErrors('typographyExtraSizes'),
+    allowAdd: true,
+    allowDelete: true,
+    allowReorder: true,
+    disabled: overrides.typographyExtraSizes is defined,
+}) }}
+{{ overrideWarning('typographyExtraSizes', overrides) }}
+
+{% set colorRows = [] %}
+{% for suffix in settings.typographyExtraColors %}
+    {% set colorRows = colorRows|merge([{ suffix: suffix }]) %}
+{% endfor %}
+
+{{ forms.editableTableField({
+    label: 'Extra Colors',
+    instructions: 'Custom `prose-{color}` or `prose-{theme}` suffixes beyond the defaults. Enter without the `prose-` prefix (e.g. `mybrand` becomes `prose-mybrand`).',
+    id: 'typographyExtraColors',
+    name: 'typographyExtraColors',
+    cols: {
+        suffix: {
+            heading: 'Suffix',
+            type: 'singleline',
+            placeholder: 'mybrand',
+        },
+    },
+    rows: colorRows,
+    errors: settings.getErrors('typographyExtraColors'),
+    allowAdd: true,
+    allowDelete: true,
+    allowReorder: true,
+    disabled: overrides.typographyExtraColors is defined,
+}) }}
+{{ overrideWarning('typographyExtraColors', overrides) }}
+
+<hr>
+
 <h2>Auto-Inject</h2>
 
 <p>Auto-inject renders your CSS variables as a <code>&lt;style&gt;</code> tag in every site page's <code>&lt;head&gt;</code>, so you don't need to call <code>{{ '{{ craft.tailwind.include() }}' }}</code> in your layout. Console and CP requests are never auto-injected.</p>

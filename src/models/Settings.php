@@ -127,6 +127,41 @@ class Settings extends Model
      */
     public array $autoInjectAttributes = [];
 
+    /**
+     * Whether the merge engine resolves `@tailwindcss/typography` conflicts.
+     *
+     * When `true`, `prose-{size}` and `prose-{color}` classes are merged
+     * as mutually-exclusive utilities — `prose prose-sm prose-lg` collapses
+     * to `prose prose-lg`. Defaults to `false` because not every project
+     * uses the typography plugin and silently resolving `prose-*` classes
+     * would surprise users with their own `prose-*` naming conventions.
+     *
+     * @var bool
+     */
+    public bool $typography = false;
+
+    /**
+     * Custom size suffixes appended to {@see TypographyConfig::DEFAULT_SIZES}.
+     *
+     * Add suffixes you've registered yourself (e.g. an `@utility prose-huge`
+     * block on v4 or a `theme.extend.typography.huge` entry on v3) so the
+     * merger treats them as size-group conflicts alongside the defaults.
+     * Suffixes are stored without the `prose-` prefix.
+     *
+     * @var array<int, string>
+     */
+    public array $typographyExtraSizes = [];
+
+    /**
+     * Custom color/theme suffixes appended to {@see TypographyConfig::DEFAULT_COLORS}.
+     *
+     * Same shape and use as {@see self::$typographyExtraSizes}, but for
+     * color/theme variants (e.g. `prose-mybrand`).
+     *
+     * @var array<int, string>
+     */
+    public array $typographyExtraColors = [];
+
     // =========================================================================
     // = Public Methods
     // =========================================================================
@@ -202,6 +237,51 @@ class Settings extends Model
     }
 
     /**
+     * Validates a typography extras list (`typographyExtraSizes` or
+     * `typographyExtraColors`).
+     *
+     * Each entry must match the Tailwind class-suffix shape: start with
+     * a letter, then letters, digits, hyphens, or underscores. Empty
+     * entries are dropped silently to tolerate trailing blank rows from
+     * the CP editable-table input.
+     *
+     * @param string $attribute The attribute name being validated.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function validateTypographyExtras(string $attribute): void
+    {
+        $list = $this->{$attribute};
+
+        if (!is_array($list)) {
+            $this->addError($attribute, sprintf('"%s" must be an array of class suffixes.', $attribute));
+
+            return;
+        }
+
+        foreach ($list as $entry) {
+            if (!is_string($entry) || $entry === '') {
+                continue;
+            }
+
+            if (!preg_match('/^[a-zA-Z][a-zA-Z0-9_-]*$/', $entry)) {
+                $this->addError(
+                    $attribute,
+                    sprintf(
+                        '"%s" entry "%s" is not a valid class suffix. '
+                        . 'Use letters, digits, hyphens, or underscores, starting with a letter.',
+                        $attribute,
+                        $entry,
+                    ),
+                );
+            }
+        }
+    }
+
+    /**
      * Validates the `cssVariables` map.
      *
      * Rejects non-string or empty values and values containing characters
@@ -258,6 +338,8 @@ class Settings extends Model
     {
         $this->cssVariables = $this->_normalizeEditableTableShape($this->cssVariables);
         $this->autoInjectAttributes = $this->_normalizeEditableTableShape($this->autoInjectAttributes);
+        $this->typographyExtraSizes = $this->_normalizeSingleColumnEditableTable($this->typographyExtraSizes);
+        $this->typographyExtraColors = $this->_normalizeSingleColumnEditableTable($this->typographyExtraColors);
 
         if ($this->prefix === '') {
             $this->prefix = null;
@@ -283,11 +365,12 @@ class Settings extends Model
         $rules[] = [['tailwindVersion'], 'required'];
         $rules[] = [['tailwindVersion'], 'in', 'range' => ['auto', '3', '4']];
         $rules[] = [['buildchainPath', 'cssPath'], 'string'];
-        $rules[] = [['autoInject'], 'boolean'];
+        $rules[] = [['autoInject', 'typography'], 'boolean'];
         $rules[] = [['cacheSize'], 'integer', 'min' => 0, 'max' => 10000];
         $rules[] = [['prefix'], 'validatePrefix'];
         $rules[] = [['autoInjectAttributes'], 'validateAutoInjectAttributes'];
         $rules[] = [['cssVariables'], 'validateCssVariables'];
+        $rules[] = [['typographyExtraSizes', 'typographyExtraColors'], 'validateTypographyExtras'];
 
         return $rules;
     }
@@ -330,6 +413,52 @@ class Settings extends Model
             }
 
             $normalized[(string) $key] = (string) $entry;
+        }
+
+        return $normalized;
+    }
+
+    /**
+     * Normalizes a single-column editable-table POST into a numeric list.
+     *
+     * Craft's `forms.editableTableField` always wraps rows in a `colId`
+     * map, so a single-column table arrives as
+     * `[rowId => ['suffix' => 'mybrand']]`. This method folds the rows
+     * into `['mybrand', ...]`. Empty entries are dropped (the editable
+     * table always submits a trailing blank "add row" placeholder).
+     * Flat input from constructor injection or `config/tailwind.php`
+     * passes through untouched.
+     *
+     * @param array<mixed> $value Raw input — either row format or flat list.
+     *
+     * @return array<int, string> Numeric list of class suffixes.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _normalizeSingleColumnEditableTable(array $value): array
+    {
+        $normalized = [];
+
+        foreach ($value as $entry) {
+            if (is_array($entry)) {
+                // Take the first non-empty string value found in the row.
+                // The col key is conventionally `suffix` (see settings.twig)
+                // but we tolerate variations to avoid coupling the model to
+                // the template's column naming.
+                foreach ($entry as $cell) {
+                    if (is_string($cell) && $cell !== '') {
+                        $normalized[] = $cell;
+                        break;
+                    }
+                }
+
+                continue;
+            }
+
+            if (is_string($entry) && $entry !== '') {
+                $normalized[] = $entry;
+            }
         }
 
         return $normalized;

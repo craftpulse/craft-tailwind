@@ -16,6 +16,7 @@ $resolved = (int) ($data['resolved'] ?? 0);
 $cacheHits = (int) ($data['cacheHits'] ?? 0);
 $cacheSize = (int) ($data['cacheSize'] ?? 0);
 $version = (string) ($data['version'] ?? 'unknown');
+$typography = is_array($data['typography'] ?? null) ? $data['typography'] : null;
 $unique = count($merges);
 $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
 ?>
@@ -60,6 +61,25 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
             <strong>Cache:</strong> <?= $cacheHits ?> hits
             (<?= $hitRate ?>% hit rate),
             <?= $cacheSize ?> entries held
+        </div>
+        <div class="row">
+            <strong>Typography:</strong>
+            <?php if ($typography === null): ?>
+                <span class="muted">disabled</span>
+            <?php else:
+                $sizeCount = count($typography['sizes'] ?? []);
+                $colorCount = count($typography['colors'] ?? []);
+                $extraSizes = $typography['extraSizes'] ?? [];
+                $extraColors = $typography['extraColors'] ?? [];
+                ?>
+                enabled (<?= $sizeCount ?> sizes, <?= $colorCount ?> colors)
+                <?php if ($extraSizes !== [] || $extraColors !== []): ?>
+                    <span class="muted">
+                        &middot; custom:
+                        <?= $extraSizes === [] ? '' : Html::encode(implode(', ', array_map(static fn($s) => 'prose-' . $s, $extraSizes))) ?><?php if ($extraSizes !== [] && $extraColors !== []): ?>, <?php endif; ?><?= $extraColors === [] ? '' : Html::encode(implode(', ', array_map(static fn($c) => 'prose-' . $c, $extraColors))) ?>
+                    </span>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     </div>
 
