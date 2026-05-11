@@ -52,7 +52,7 @@ A form input has default styling. Error state needs a red border. Disabled state
 {% set disabled = 'bg-gray-100 text-gray-400 cursor-not-allowed' %}
 
 {# Merge resolves border-gray-300 vs border-red-500 automatically #}
-<input class="{{ base|twmerge(hasErrors ? error : '', isDisabled ? disabled : '') }}" />
+<input class="{{ craft.tailwind.merge(base, hasErrors ? error : '', isDisabled ? disabled : '') }}" />
 ```
 
 ## Installation
@@ -113,9 +113,13 @@ When a setting is defined in both the config file and the CP, the config file va
 
 ### About the `cacheSize` setting
 
-The merge engine is called every time you use `|twmerge` or `craft.tailwind.merge()`. To avoid re-parsing the same class strings over and over within a single request, results are kept in an in-memory **LRU cache** (Least Recently Used). When the cache fills up, the entry that hasn't been used for the longest gets evicted to make room — so "hot" class strings (e.g. your main button's classes) stay resident.
+The merge engine is called every time you use `craft.tailwind.merge()` or build a `ClassList`. To avoid re-parsing the same class strings over and over within a single request, results are kept in an in-memory **LRU cache** (Least Recently Used). When the cache fills up, the entry that hasn't been used for the longest gets evicted to make room — so "hot" class strings (e.g. your main button's classes) stay resident.
 
 The cache is per-request: it lives only for the duration of one PHP process. You don't need to think about invalidation. Set `cacheSize` to `0` to disable caching entirely (useful when debugging a merge).
+
+### Long-running runtimes (Octane, RoadRunner, queue workers)
+
+If you run Craft in a persistent process — Laravel Octane, RoadRunner, or a long-lived queue worker — the merge cache, hit/miss counters, debug recordings, and memoized CSS variables container carry over between requests. Call `Plugin::$plugin->tailwind->clearCache()` at the start of each request (e.g. on `EVENT_BEFORE_REQUEST`) to reset the request-scoped state. Standard FPM/CLI Craft setups don't need this — the PHP process exits at the end of each request and state is naturally cleared.
 
 ### Multi-environment configuration
 
@@ -139,20 +143,14 @@ return [
 
 ### Class merging
 
-The `|twmerge` filter resolves conflicting Tailwind utilities. The last class per CSS property group wins:
-
-```twig
-{{ 'px-4 bg-red-500'|twmerge('bg-blue-500 mt-4') }}
-{# Result: px-4 bg-blue-500 mt-4 #}
-```
-
-You can also merge via the template variable:
+`craft.tailwind.merge()` resolves conflicting Tailwind utilities. The last class per CSS property group wins:
 
 ```twig
 {{ craft.tailwind.merge('px-4 bg-red-500', 'bg-blue-500 mt-4') }}
+{# Result: px-4 bg-blue-500 mt-4 #}
 ```
 
-Both forms accept multiple arguments. Each argument is a space-separated class string.
+Accepts any number of arguments. Each argument is a space-separated class string.
 
 ### Named-slot ClassList
 
@@ -286,7 +284,7 @@ To skip detection entirely, set `tailwindVersion` to `'3'` or `'4'` explicitly.
 
 When Craft's debug toolbar is enabled (devMode + a user with debug access), a **Tailwind** panel appears alongside the others. It records every merge operation during the current request and shows:
 
-- **Total calls / unique inputs** — how many times `merge()` or `|twmerge` ran, and how many distinct input strings were seen
+- **Total calls / unique inputs** — how many times `merge()` ran, and how many distinct input strings were seen
 - **Cache stats** — hit count, hit rate, and current LRU entry count
 - **Per-merge detail** — the input, the resolved output, whether a conflict was actually resolved (vs passthrough), the call count, and **the template that ran the merge**
 
@@ -300,11 +298,11 @@ The Tailwind Typography plugin (`@tailwindcss/typography`) works out of the box.
 
 ```twig
 {# Size modifiers resolve last-wins #}
-{{ 'prose prose-sm'|twmerge('prose-lg') }}
+{{ craft.tailwind.merge('prose prose-sm', 'prose-lg') }}
 {# Result: prose prose-lg #}
 
 {# Light/dark variants resolve last-wins #}
-{{ 'prose prose-slate'|twmerge('prose-invert') }}
+{{ craft.tailwind.merge('prose prose-slate', 'prose-invert') }}
 {# Result: prose prose-invert #}
 ```
 
@@ -313,7 +311,7 @@ A typical rich-text area with editor-controlled size:
 ```twig
 {% set proseSize = entry.proseSize.value ?? 'prose-base' %}
 
-<article class="{{ 'prose prose-slate max-w-none'|twmerge(proseSize) }}">
+<article class="{{ craft.tailwind.merge('prose prose-slate max-w-none', proseSize) }}">
     {{ entry.body|raw }}
 </article>
 ```
@@ -321,12 +319,6 @@ A typical rich-text area with editor-controlled size:
 No special configuration required — typography utilities follow the same merge rules as every other Tailwind utility.
 
 ## API reference
-
-### Twig filter
-
-| Signature | Description |
-|-----------|-------------|
-| `'classes'\|twmerge('more classes', ...)` | Merge class strings, last wins per CSS property |
 
 ### Template variables (`craft.tailwind`)
 
