@@ -336,10 +336,10 @@ class Settings extends Model
      */
     public function beforeValidate(): bool
     {
-        $this->cssVariables = $this->_normalizeEditableTableShape($this->cssVariables);
-        $this->autoInjectAttributes = $this->_normalizeEditableTableShape($this->autoInjectAttributes);
-        $this->typographyExtraSizes = $this->_normalizeSingleColumnEditableTable($this->typographyExtraSizes);
-        $this->typographyExtraColors = $this->_normalizeSingleColumnEditableTable($this->typographyExtraColors);
+        $this->cssVariables = $this->_normalizeMap($this->cssVariables);
+        $this->autoInjectAttributes = $this->_normalizeMap($this->autoInjectAttributes);
+        $this->typographyExtraSizes = $this->_normalizeList($this->typographyExtraSizes);
+        $this->typographyExtraColors = $this->_normalizeList($this->typographyExtraColors);
 
         if ($this->prefix === '') {
             $this->prefix = null;
@@ -380,35 +380,38 @@ class Settings extends Model
     // =========================================================================
 
     /**
-     * Normalizes editable-table POST input to a flat `name => value` map.
+     * Normalizes a two-column editable-table POST into a flat `name => value` map.
      *
      * Craft's `forms.editableTableField` posts each cell as
      * `field[rowId][colId]=value`, so PHP delivers
-     * `[rowId => ['name' => '...', 'value' => '...']]`. This method folds
-     * those rows down to the flat associative shape the model declares,
-     * while leaving inputs that are already flat (constructor injection,
-     * `config/tailwind.php`) untouched.
+     * `[rowId => ['name' => ..., 'value' => ...]]`. This method folds those
+     * rows into the flat associative shape the model declares, while leaving
+     * inputs that are already flat (constructor injection, `config/tailwind.php`)
+     * untouched. Rows whose `name` cell is empty are dropped silently —
+     * editable tables always submit a trailing blank "add row" placeholder.
      *
      * @param array<mixed> $value Raw input — either row format or flat map.
+     * @param string $keyCol The column key holding the map key.
+     * @param string $valueCol The column key holding the map value.
      *
      * @return array<string, string> Normalized flat map.
      *
      * @author CraftPulse
      * @since 5.0.0
      */
-    private function _normalizeEditableTableShape(array $value): array
+    private function _normalizeMap(array $value, string $keyCol = 'name', string $valueCol = 'value'): array
     {
         $normalized = [];
 
         foreach ($value as $key => $entry) {
-            if (is_array($entry) && array_key_exists('name', $entry)) {
-                $name = (string) $entry['name'];
+            if (is_array($entry) && array_key_exists($keyCol, $entry)) {
+                $name = (string) $entry[$keyCol];
 
                 if ($name === '') {
                     continue;
                 }
 
-                $normalized[$name] = (string) ($entry['value'] ?? '');
+                $normalized[$name] = (string) ($entry[$valueCol] ?? '');
                 continue;
             }
 
@@ -421,36 +424,32 @@ class Settings extends Model
     /**
      * Normalizes a single-column editable-table POST into a numeric list.
      *
-     * Craft's `forms.editableTableField` always wraps rows in a `colId`
-     * map, so a single-column table arrives as
-     * `[rowId => ['suffix' => 'mybrand']]`. This method folds the rows
-     * into `['mybrand', ...]`. Empty entries are dropped (the editable
-     * table always submits a trailing blank "add row" placeholder).
-     * Flat input from constructor injection or `config/tailwind.php`
-     * passes through untouched.
+     * Craft's `forms.editableTableField` posts a single-column table as
+     * `[rowId => [colKey => value]]`. This method folds those rows into a
+     * flat numeric list, reading the cell at `$colKey` (default `'suffix'`,
+     * matching the typography extras tables). Empty entries are dropped
+     * (the editable table always submits a trailing blank "add row"
+     * placeholder). Flat input from constructor injection or
+     * `config/tailwind.php` passes through untouched.
      *
      * @param array<mixed> $value Raw input — either row format or flat list.
+     * @param string $colKey The column key whose value to extract from each row.
      *
-     * @return array<int, string> Numeric list of class suffixes.
+     * @return array<int, string> Numeric list of values.
      *
      * @author CraftPulse
      * @since 5.0.0
      */
-    private function _normalizeSingleColumnEditableTable(array $value): array
+    private function _normalizeList(array $value, string $colKey = 'suffix'): array
     {
         $normalized = [];
 
         foreach ($value as $entry) {
             if (is_array($entry)) {
-                // Take the first non-empty string value found in the row.
-                // The col key is conventionally `suffix` (see settings.twig)
-                // but we tolerate variations to avoid coupling the model to
-                // the template's column naming.
-                foreach ($entry as $cell) {
-                    if (is_string($cell) && $cell !== '') {
-                        $normalized[] = $cell;
-                        break;
-                    }
+                $cell = $entry[$colKey] ?? null;
+
+                if (is_string($cell) && $cell !== '') {
+                    $normalized[] = $cell;
                 }
 
                 continue;
