@@ -535,8 +535,12 @@ class TailwindService extends Component
             $config['prefix'] = $fusedV3Prefix ? $prefix . '-' : $prefix;
         }
 
+        // array_merge (not array_merge_recursive) — the two sources contribute
+        // distinct top-level keys (prefix vs classGroups). Recursive merge
+        // would convert any colliding scalar (e.g. a future prefix override)
+        // into an array, which neither engine expects.
         if ($typography !== null) {
-            $config = array_merge_recursive($config, $typography->toMergeConfig());
+            $config = array_merge($config, $typography->toMergeConfig());
         }
 
         return $config;
