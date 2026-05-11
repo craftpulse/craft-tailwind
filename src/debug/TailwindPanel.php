@@ -136,6 +136,7 @@ class TailwindPanel extends Panel
 
         $cacheHits = $service->getCacheHitCount();
         $cacheMisses = $service->getCacheMissCount();
+
         return [
             'merges' => $merges,
             'totalCalls' => $cacheHits + $cacheMisses,
