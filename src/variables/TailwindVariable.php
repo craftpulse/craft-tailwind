@@ -22,6 +22,9 @@ use Twig\Markup;
  * Provides access to Tailwind merge functionality via `craft.tailwind`
  * in Twig templates.
  *
+ * @property-read CssVariables $cssVariables The CSS variables container.
+ * @property-read string $version The detected Tailwind version ('3' or '4').
+ *
  * @author CraftPulse
  * @since 5.0.0
  */
