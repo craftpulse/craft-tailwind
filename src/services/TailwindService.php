@@ -67,6 +67,12 @@ class TailwindService extends Component
      * exercise specific configurations (e.g. small `cacheSize`) without
      * bootstrapping the full plugin.
      *
+     * Reassigning this property after any merges have been cached will
+     * leave stale entries in the LRU keyed against the previous
+     * configuration. Call {@see self::clearCache()} immediately after
+     * reassignment so subsequent merges don't serve results computed
+     * against the old settings.
+     *
      * @var ?Settings
      */
     public ?Settings $settings = null;
