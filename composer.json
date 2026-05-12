@@ -22,6 +22,7 @@
     },
     "require-dev": {
         "craftcms/ecs": "dev-main",
+        "craftcms/phpstan": "dev-main",
         "pestphp/pest": "^3.0",
         "phpstan/phpstan": "^1.0"
     },
