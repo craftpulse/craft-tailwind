@@ -317,8 +317,9 @@ class TailwindService extends Component
      * fresh per request and discarded at the end. Resets the LRU cache,
      * hit/miss counters, recorded merges, and the memoized CSS variables
      * and typography config containers. The recording-enabled flag and
-     * merger instances are intentionally preserved — the latter invalidate
-     * themselves via the per-merger signature when settings change.
+     * merger instances are intentionally preserved; the merger instances
+     * are rebuilt lazily on the next `_getMergerVX()` call if their
+     * stored signature no longer matches the current settings.
      *
      * @internal Exposed for the test suite, not for third-party callers.
      *
