@@ -33,7 +33,11 @@ jobs:
           ini-values: post_max_size=256M, max_execution_time=180, memory_limit=512M
           tools: composer:v2
       - name: Install Composer dependencies
-        run: composer install --no-interaction --no-ansi --no-progress
+        # --no-security-blocking lets the install proceed despite upstream
+        # advisories on Craft's transitive deps (yii2, graphql-php). Those
+        # are Craft's surface to fix; this plugin can't and shouldn't gate
+        # its own CI on them.
+        run: composer install --no-interaction --no-ansi --no-progress --no-security-blocking
       - name: PHPStan
         run: composer phpstan
       - name: Coding Standards
