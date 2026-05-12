@@ -157,7 +157,9 @@ class ClassList implements Stringable
      * Returns the merged string with additional classes appended.
      *
      * Combines all slot values with the additional string and runs
-     * the result through the merge callable.
+     * the result through the merge callable. An empty `$additional`
+     * is skipped so callers using a naive merger (test doubles, custom
+     * injection) don't inherit a trailing space.
      *
      * @param string $additional Additional CSS classes to merge in.
      *
@@ -169,6 +171,10 @@ class ClassList implements Stringable
     public function merge(string $additional): string
     {
         $allClasses = implode(' ', array_values($this->_slots));
+
+        if ($additional === '') {
+            return ($this->_merger)($allClasses);
+        }
 
         return ($this->_merger)($allClasses, $additional);
     }

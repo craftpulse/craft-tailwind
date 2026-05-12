@@ -202,7 +202,7 @@ it('merges additional classes with all slots', function(): void {
     expect($result)->toBe('flex px-4 mt-4');
 });
 
-it('merges empty additional string', function(): void {
+it('skips an empty additional rather than producing trailing whitespace', function(): void {
     $classList = new ClassList(
         ['layout' => 'flex'],
         fn(string ...$args): string => implode(' ', $args),
@@ -210,7 +210,7 @@ it('merges empty additional string', function(): void {
 
     $result = $classList->merge('');
 
-    expect($result)->toBe('flex ');
+    expect($result)->toBe('flex');
 });
 
 // =========================================================================
