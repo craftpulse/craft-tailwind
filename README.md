@@ -136,6 +136,8 @@ The merge engine is called every time you use `craft.tailwind.merge()` or build 
 
 The cache is per-request: it lives only for the duration of one PHP process. You don't need to think about invalidation. Set `cacheSize` to `0` to disable caching entirely (useful when debugging a merge).
 
+> **Tip — HMR and the LRU don't interact.** Because the cache is per-request, it starts empty on every page load. Editing `tailwind.config.js`, your CSS entry, the plugin settings, or anything Vite picks up will be reflected on the very next request — there's no stale cache to clear during development. The one place merges can survive across requests is inside Craft's `{% cache %}` blocks; that's normal template caching, not the plugin's LRU, and the usual `{% cache %}` invalidation rules apply.
+
 ### Multi-environment configuration
 
 The config file supports Craft's standard multi-environment pattern:
