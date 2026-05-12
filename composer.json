@@ -43,6 +43,12 @@
         "documentationUrl": "https://github.com/craftpulse/craft-tailwind",
         "class": "craftpulse\\tailwind\\Plugin"
     },
+    "scripts": {
+        "phpstan": "phpstan --ansi --memory-limit=1G",
+        "check-cs": "ecs check --ansi",
+        "fix-cs": "ecs check --fix --ansi",
+        "test": "pest --no-coverage --colors=always"
+    },
     "config": {
         "sort-packages": true,
         "allow-plugins": {

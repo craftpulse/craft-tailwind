@@ -1,0 +1,42 @@
+name: Code Analysis
+
+on:
+  pull_request: null
+  push:
+    branches:
+      - develop-v5
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  code_analysis:
+    name: PHP ${{ matrix.php }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php: ['8.2', '8.3', '8.4']
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: /tmp/composer-cache
+          key: ${{ runner.os }}-php-${{ matrix.php }}-${{ hashFiles('**/composer.json') }}
+          restore-keys: ${{ runner.os }}-php-${{ matrix.php }}-
+      - name: Setup PHP
+        id: setup-php
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: 'ctype,curl,dom,iconv,intl,json,mbstring,openssl,pcre,pdo,reflection,spl,zip'
+          ini-values: post_max_size=256M, max_execution_time=180, memory_limit=512M
+          tools: composer:v2
+      - name: Install Composer dependencies
+        run: composer install --no-interaction --no-ansi --no-progress
+      - name: PHPStan
+        run: composer phpstan
+      - name: Coding Standards
+        run: composer check-cs
+      - name: Pest
+        run: composer test
