@@ -761,6 +761,18 @@ class TailwindService extends Component
             return $template->getTemplateName();
         }
 
+        // Prefer making the path relative to Craft's @templates alias — site
+        // templates show as `atoms/button.twig` (no redundant `templates/`
+        // prefix) since editors already know where their template root is.
+        $templates = Craft::getAlias('@templates', false);
+
+        if (is_string($templates) && $templates !== '' && str_starts_with($sourcePath, $templates . DIRECTORY_SEPARATOR)) {
+            return substr($sourcePath, strlen($templates) + 1);
+        }
+
+        // Fall back to project-root-relative for plugin-supplied templates
+        // (e.g. `vendor/foo/templates/bar.twig`) so the path still anchors
+        // to a recognizable location.
         $root = Craft::getAlias('@root', false);
 
         if (is_string($root) && $root !== '' && str_starts_with($sourcePath, $root . DIRECTORY_SEPARATOR)) {
