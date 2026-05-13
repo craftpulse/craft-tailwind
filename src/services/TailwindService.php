@@ -7,6 +7,7 @@
 
 namespace craftpulse\tailwind\services;
 
+use Craft;
 use craft\base\Component;
 
 use craftpulse\tailwind\models\ClassList;
@@ -667,7 +668,7 @@ class TailwindService extends Component
     }
 
     /**
-     * Resolves the calling Twig template name and source line via the backtrace.
+     * Resolves the calling Twig template path and source line via the backtrace.
      *
      * Uses the same technique as `Twig\Error\Error::guessTemplateInfo()`:
      * finds the nearest Twig template on the stack, takes its compiled PHP
@@ -675,7 +676,13 @@ class TailwindService extends Component
      * the template's `getDebugInfo()` map to translate the compiled PHP line
      * into the original template line.
      *
-     * @return array{0: ?string, 1: ?int} Tuple of template name and source line.
+     * The returned path is project-relative when the template lives under
+     * the project root (typically `templates/foo.twig` for site templates
+     * or `vendor/.../templates/bar.twig` for plugin-supplied templates).
+     * Falls back to the loader-relative template name when the source path
+     * is unavailable (string templates) or sits outside the project root.
+     *
+     * @return array{0: ?string, 1: ?int} Tuple of source path and source line.
      *
      * @author CraftPulse
      * @since 5.0.0
@@ -702,10 +709,10 @@ class TailwindService extends Component
         }
 
         $compiledFile = (new \ReflectionObject($template))->getFileName();
-        $name = $template->getTemplateName();
+        $displayPath = $this->_displayTemplatePath($template);
 
         if ($compiledFile === false) {
-            return [$name, null];
+            return [$displayPath, null];
         }
 
         foreach ($trace as $frame) {
@@ -715,14 +722,52 @@ class TailwindService extends Component
 
             foreach ($template->getDebugInfo() as $phpLine => $twigLine) {
                 if ($phpLine <= $frame['line']) {
-                    return [$name, $twigLine];
+                    return [$displayPath, $twigLine];
                 }
             }
 
             break;
         }
 
-        return [$name, null];
+        return [$displayPath, null];
+    }
+
+    /**
+     * Resolves a Twig template's display path for the debug panel.
+     *
+     * Prefers the source-context path made relative to the project root
+     * (e.g. `templates/_components/button.twig`) so editors recognize the
+     * file at a glance. Falls back to the loader-relative template name
+     * for string templates or when the source path can't be resolved.
+     *
+     * @param Template $template The Twig template object.
+     *
+     * @return string The display path or template name.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _displayTemplatePath(Template $template): string
+    {
+        $sourcePath = '';
+
+        try {
+            $sourcePath = $template->getSourceContext()->getPath();
+        } catch (\Throwable) {
+            $sourcePath = '';
+        }
+
+        if ($sourcePath === '') {
+            return $template->getTemplateName();
+        }
+
+        $root = Craft::getAlias('@root', false);
+
+        if (is_string($root) && $root !== '' && str_starts_with($sourcePath, $root . DIRECTORY_SEPARATOR)) {
+            return substr($sourcePath, strlen($root) + 1);
+        }
+
+        return $sourcePath;
     }
 
     /**
