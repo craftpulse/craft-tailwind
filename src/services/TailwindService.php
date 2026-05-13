@@ -14,7 +14,7 @@ use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
 use craftpulse\tailwind\models\Settings;
 use craftpulse\tailwind\models\TypographyConfig;
-use craftpulse\tailwind\Plugin;
+use craftpulse\tailwind\Tailwind;
 
 use TailwindMerge\TailwindMerge as TailwindMergeV3;
 use TalesFromADev\TailwindMerge\TailwindMerge as TailwindMergeV4;
@@ -73,7 +73,7 @@ class TailwindService extends Component
     /**
      * Optional Settings override.
      *
-     * When set, takes precedence over `Plugin::$plugin->getSettings()`.
+     * When set, takes precedence over `Tailwind::$plugin->getSettings()`.
      * Provided as a Yii-component-style injection seam so unit tests can
      * exercise specific configurations (e.g. small `cacheSize`) without
      * bootstrapping the full plugin.
@@ -458,7 +458,7 @@ class TailwindService extends Component
      */
     private function _settings(): ?Settings
     {
-        return $this->settings ?? Plugin::$plugin?->getSettings();
+        return $this->settings ?? Tailwind::$plugin?->getSettings();
     }
 
     /**
@@ -648,7 +648,7 @@ class TailwindService extends Component
      */
     private function _getVersionDetector(): VersionDetector
     {
-        return Plugin::$plugin?->versionDetector ?? new VersionDetector();
+        return Tailwind::$plugin?->versionDetector ?? new VersionDetector();
     }
 
     /**

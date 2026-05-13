@@ -7,7 +7,7 @@
 
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
-use craftpulse\tailwind\Plugin;
+use craftpulse\tailwind\Tailwind;
 use craftpulse\tailwind\variables\TailwindVariable;
 
 // =========================================================================
@@ -15,14 +15,14 @@ use craftpulse\tailwind\variables\TailwindVariable;
 // =========================================================================
 
 // Each `craft.tailwind.*` accessor short-circuits to a safe default when
-// `Plugin::$plugin` is unset. The Pest bootstrap doesn't bring up Craft,
+// `Tailwind::$plugin` is unset. The Pest bootstrap doesn't bring up Craft,
 // so these tests run against that branch directly. `include()` is not
 // exercised here — its fallback path goes through `Template::raw()`,
 // which requires `Craft::$app` to be initialized; in real Twig usage the
 // app is always up so the branch is unreachable.
 
 beforeEach(function(): void {
-    Plugin::$plugin = null;
+    Tailwind::$plugin = null;
 });
 
 it('returns an empty string from merge() when the plugin is unset', function(): void {

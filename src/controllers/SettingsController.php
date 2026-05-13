@@ -12,7 +12,7 @@ use craft\helpers\UrlHelper;
 use craft\web\Controller;
 use craft\web\UrlManager;
 
-use craftpulse\tailwind\Plugin;
+use craftpulse\tailwind\Tailwind;
 
 use yii\web\BadRequestHttpException;
 use yii\web\ForbiddenHttpException;
@@ -22,7 +22,7 @@ use yii\web\Response;
 /**
  * Settings controller — renders the plugin settings page and persists posts.
  *
- * Routed in `Plugin::_registerCpUrlRules()` so that `tailwind/settings` and
+ * Routed in `Tailwind::_registerCpUrlRules()` so that `tailwind/settings` and
  * the plugin's CP entry point both land here. We render into `_layouts/cp`
  * via the settings template so Craft's page-tabs strip can pick up the
  * tab declaration directly (the layout reads `tabs` from the rendering
@@ -64,7 +64,7 @@ class SettingsController extends Controller
      * failed save in `actionSave()` — passing the in-memory plugin with
      * populated validation errors so the form can re-render them.
      *
-     * @param ?Plugin $plugin The plugin instance forwarded from a failed
+     * @param ?Tailwind $plugin The plugin instance forwarded from a failed
      *                        save, or `null` to fall back to the registered
      *                        singleton.
      *
@@ -80,9 +80,9 @@ class SettingsController extends Controller
      * @author CraftPulse
      * @since 5.0.0
      */
-    public function actionEdit(?Plugin $plugin = null): ?Response
+    public function actionEdit(?Tailwind $plugin = null): ?Response
     {
-        $plugin ??= Plugin::$plugin;
+        $plugin ??= Tailwind::$plugin;
 
         if ($plugin === null) {
             throw new NotFoundHttpException('Tailwind plugin not loaded.');

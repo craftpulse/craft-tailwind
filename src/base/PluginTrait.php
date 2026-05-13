@@ -5,11 +5,10 @@
  * @copyright Copyright (c) CraftPulse
  */
 
-namespace craftpulse\tailwind;
+namespace craftpulse\tailwind\base;
 
 use Craft;
 use craft\base\Model;
-use craft\base\Plugin as BasePlugin;
 use craft\events\RegisterUrlRulesEvent;
 use craft\helpers\UrlHelper;
 use craft\web\Application;
@@ -19,8 +18,7 @@ use craft\web\View;
 
 use craftpulse\tailwind\debug\TailwindPanel;
 use craftpulse\tailwind\models\Settings;
-use craftpulse\tailwind\services\TailwindService;
-use craftpulse\tailwind\services\VersionDetector;
+use craftpulse\tailwind\Tailwind;
 use craftpulse\tailwind\variables\TailwindVariable;
 
 use yii\base\Application as BaseApplication;
@@ -29,77 +27,19 @@ use yii\base\InvalidRouteException;
 use yii\debug\Module as DebugModule;
 
 /**
- * Tailwind plugin for Craft CMS 5.
+ * Plugin-class extensions for the Tailwind plugin.
  *
- * Provides Tailwind CSS class merging, named-slot class builders,
- * and automatic version detection for Craft CMS templates.
- *
- * @property-read TailwindService $tailwind The main Tailwind service.
- * @property-read VersionDetector $versionDetector The version detector service.
- * @property-read Settings $settings The plugin settings model.
- *
- * @method Settings getSettings()
+ * Holds the register* private methods invoked from `Tailwind::init()`,
+ * the settings-response overrides that redirect to the dedicated
+ * `SettingsController` route, and the settings model factory.
  *
  * @author CraftPulse
  * @since 5.0.0
  */
-class Plugin extends BasePlugin
+trait PluginTrait
 {
-    // Static Properties
-    // =========================================================================
-
-    /**
-     * Static reference to the plugin instance.
-     *
-     * @var ?Plugin
-     */
-    public static ?Plugin $plugin = null;
-
-    // Public Properties
-    // =========================================================================
-
-    /**
-     * @var string The schema version for this plugin.
-     */
-    public string $schemaVersion = '1.0.0';
-
-    /**
-     * @var bool Whether the plugin has a settings page in the control panel.
-     */
-    public bool $hasCpSettings = true;
-
-    /**
-     * @var bool Whether the settings page is viewable when `allowAdminChanges`
-     * is disabled. Matches Craft's first-party behavior for plugins that
-     * surface settings — editors can still see what's configured in production
-     * even though they cannot change it.
-     */
-    public bool $hasReadOnlyCpSettings = true;
-
     // Public Methods
     // =========================================================================
-
-    /**
-     * @inheritdoc
-     *
-     * @return void
-     *
-     * @author CraftPulse
-     * @since 5.0.0
-     */
-    public function init(): void
-    {
-        parent::init();
-        self::$plugin = $this;
-
-        Craft::setAlias('@craftpulse/tailwind', __DIR__);
-
-        $this->_registerServices();
-        $this->_registerVariables();
-        $this->_registerAutoInject();
-        $this->_registerDebugPanel();
-        $this->_registerCpUrlRules();
-    }
 
     /**
      * @inheritdoc
@@ -152,6 +92,8 @@ class Plugin extends BasePlugin
     /**
      * @inheritdoc
      *
+     * @return ?Model
+     *
      * @author CraftPulse
      * @since 5.0.0
      */
@@ -162,22 +104,6 @@ class Plugin extends BasePlugin
 
     // Private Methods
     // =========================================================================
-
-    /**
-     * Registers the plugin's service components.
-     *
-     * @return void
-     *
-     * @author CraftPulse
-     * @since 5.0.0
-     */
-    private function _registerServices(): void
-    {
-        $this->setComponents([
-            'tailwind' => TailwindService::class,
-            'versionDetector' => VersionDetector::class,
-        ]);
-    }
 
     /**
      * Registers template variables under `craft.tailwind`.
@@ -234,7 +160,7 @@ class Plugin extends BasePlugin
             View::class,
             View::EVENT_BEFORE_RENDER_PAGE_TEMPLATE,
             function() use ($settings): void {
-                $variables = self::$plugin?->tailwind->cssVariables();
+                $variables = Tailwind::$plugin?->tailwind->cssVariables();
 
                 if ($variables === null || $variables->isEmpty()) {
                     return;
@@ -281,7 +207,7 @@ class Plugin extends BasePlugin
                     'module' => $debugModule,
                 ]);
 
-                self::$plugin?->tailwind->enableRecording();
+                Tailwind::$plugin?->tailwind->enableRecording();
             },
         );
     }
@@ -289,9 +215,9 @@ class Plugin extends BasePlugin
     /**
      * Registers CP URL rules so the plugin-settings link routes to our
      * SettingsController rather than the default Craft plugin-settings
-     * page wrapper. Three forms point at the same `edit` action so a CP
-     * nav click, a typed-in `/tailwind/settings` URL, and Craft's own
-     * `settings/plugins/<handle>` redirect all land in the same place.
+     * page wrapper. Both forms point at the same `edit` action so a CP
+     * nav click and a typed-in `/tailwind/settings` URL land in the same
+     * place.
      *
      * @return void
      *

@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file. The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Changed
+
+- Renamed the main plugin class from `craftpulse\tailwind\Plugin` to `craftpulse\tailwind\Tailwind` (and `src/Plugin.php` to `src/Tailwind.php`), aligning with the Craft ecosystem convention of naming the entry class after the plugin. Third-party code that imported the old class name will need to update its `use` statement.
+- Extracted plugin scaffolding into `base\PluginTrait` (event and URL registration, settings response overrides) and `services\ServicesTrait` (typed service getters and `static config()` for component registration), matching the `PluginTrait` / `ServicesTrait` split used across the other CraftPulse plugins.
+
 ## [5.0.0] - 2026-05-13
 
 Initial public release for Craft CMS 5.

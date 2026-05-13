@@ -12,7 +12,7 @@ use craft\helpers\Template;
 
 use craftpulse\tailwind\models\ClassList;
 use craftpulse\tailwind\models\CssVariables;
-use craftpulse\tailwind\Plugin;
+use craftpulse\tailwind\Tailwind;
 
 use Twig\Markup;
 
@@ -47,7 +47,7 @@ class TailwindVariable
      */
     public function merge(string ...$classes): string
     {
-        return Plugin::$plugin?->tailwind->merge(...$classes) ?? '';
+        return Tailwind::$plugin?->tailwind->merge(...$classes) ?? '';
     }
 
     /**
@@ -64,7 +64,7 @@ class TailwindVariable
      */
     public function classes(array $slots): ClassList
     {
-        return Plugin::$plugin?->tailwind->classes($slots)
+        return Tailwind::$plugin?->tailwind->classes($slots)
             ?? new ClassList([], static fn(string ...$args): string => '');
     }
 
@@ -80,7 +80,7 @@ class TailwindVariable
      */
     public function getVersion(): string
     {
-        return Plugin::$plugin?->tailwind->getVersion() ?? '4';
+        return Tailwind::$plugin?->tailwind->getVersion() ?? '4';
     }
 
     /**
@@ -100,7 +100,7 @@ class TailwindVariable
      */
     public function getCssVariables(): CssVariables
     {
-        return Plugin::$plugin?->tailwind->cssVariables() ?? new CssVariables([]);
+        return Tailwind::$plugin?->tailwind->cssVariables() ?? new CssVariables([]);
     }
 
     /**

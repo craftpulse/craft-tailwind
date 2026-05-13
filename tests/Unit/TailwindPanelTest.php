@@ -6,14 +6,14 @@
  */
 
 use craftpulse\tailwind\debug\TailwindPanel;
-use craftpulse\tailwind\Plugin;
+use craftpulse\tailwind\Tailwind;
 
 // =========================================================================
 // save() — null-plugin shape
 // =========================================================================
 
 // `save()` carries a defensive null-plugin branch even though normal
-// Plugin::init() ordering means `Plugin::$plugin` is set before the
+// Tailwind::init() ordering means `Tailwind::$plugin` is set before the
 // panel registers itself — so the branch is functionally unreachable
 // today. The test locks the returned shape so a future refactor that
 // changes panel registration timing (or a third-party module that pokes
@@ -21,7 +21,7 @@ use craftpulse\tailwind\Plugin;
 // templates rely on.
 
 beforeEach(function(): void {
-    Plugin::$plugin = null;
+    Tailwind::$plugin = null;
 });
 
 it('returns a complete zero-valued shape when the plugin is unset', function(): void {

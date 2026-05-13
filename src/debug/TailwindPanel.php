@@ -9,7 +9,7 @@ namespace craftpulse\tailwind\debug;
 
 use Craft;
 
-use craftpulse\tailwind\Plugin;
+use craftpulse\tailwind\Tailwind;
 
 use yii\debug\Panel;
 
@@ -108,7 +108,7 @@ class TailwindPanel extends Panel
      */
     public function save(): array
     {
-        $plugin = Plugin::$plugin;
+        $plugin = Tailwind::$plugin;
 
         if ($plugin === null) {
             return [
