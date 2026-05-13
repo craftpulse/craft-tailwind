@@ -3,7 +3,7 @@
     "description": "Tailwind CSS class merging and named-slot class builder for Craft CMS 5",
     "version": "5.0.0",
     "type": "craft-plugin",
-    "license": "MIT",
+    "license": "proprietary",
     "keywords": [
         "craft",
         "cms",
