@@ -45,44 +45,30 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
 <?php if ($merges === []): ?>
     <p><em>No merge operations recorded for this request.</em></p>
 <?php else: ?>
-    <table class="table table-condensed table-bordered table-striped table-hover" style="table-layout: fixed;">
-        <thead>
-            <tr>
-                <th style="width: 8%;">Calls</th>
-                <th style="width: 12%;">Status</th>
-                <th style="width: 28%;">Input</th>
-                <th style="width: 28%;">Output</th>
-                <th style="width: 24%;">Template</th>
-            </tr>
-        </thead>
-        <tbody>
-            <?php foreach ($merges as $merge): ?>
+    <div class="table-responsive">
+        <table class="table table-condensed table-bordered table-striped table-hover" style="table-layout: fixed;">
+            <thead>
                 <tr>
-                    <td class="align-middle"><?= (int) $merge['count'] ?></td>
-                    <td class="align-middle">
-                        <?php if ($merge['resolved']): ?>
-                            <span class="text-success">resolved</span>
-                        <?php else: ?>
-                            <span class="text-muted">passthrough</span>
-                        <?php endif; ?>
-                    </td>
-                    <td class="align-middle"><code><?= Html::encode($merge['input']) ?></code></td>
-                    <td class="align-middle">
-                        <?php if ($merge['resolved']): ?>
-                            <code class="text-success"><?= Html::encode($merge['output']) ?></code>
-                        <?php else: ?>
-                            <code class="text-muted"><?= Html::encode($merge['output']) ?></code>
-                        <?php endif; ?>
-                    </td>
-                    <td class="align-middle">
-                        <?php if ($merge['template'] !== null): ?>
-                            <code><?= Html::encode($merge['template']) ?></code><?php if (!empty($merge['line'])): ?><code class="text-muted">:<?= (int) $merge['line'] ?></code><?php endif; ?>
-                        <?php else: ?>
-                            <em class="text-muted">outside template</em>
-                        <?php endif; ?>
-                    </td>
+                    <th style="width: 8%;">Calls</th>
+                    <th style="width: 12%;">Status</th>
+                    <th style="width: 28%;">Input</th>
+                    <th style="width: 28%;">Output</th>
+                    <th style="width: 24%;">Template</th>
                 </tr>
-            <?php endforeach; ?>
-        </tbody>
-    </table>
+            </thead>
+            <tbody>
+                <?php foreach ($merges as $merge): ?>
+                    <?php $resolved = $merge['resolved']; ?>
+                    <?php $outputClass = $resolved ? 'text-success' : 'text-muted'; ?>
+                    <tr>
+                        <td class="align-middle"><?= (int) $merge['count'] ?></td>
+                        <td class="align-middle"><span class="<?= $outputClass ?>"><?= $resolved ? 'resolved' : 'passthrough' ?></span></td>
+                        <td class="align-middle"><code><?= Html::encode($merge['input']) ?></code></td>
+                        <td class="align-middle"><code class="<?= $outputClass ?>"><?= Html::encode($merge['output']) ?></code></td>
+                        <td class="align-middle"><?php if ($merge['template'] !== null): ?><code><?= Html::encode($merge['template']) ?></code><?php if (!empty($merge['line'])): ?><code class="text-muted">:<?= (int) $merge['line'] ?></code><?php endif; ?><?php else: ?><em class="text-muted">outside template</em><?php endif; ?></td>
+                    </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+    </div>
 <?php endif; ?>
