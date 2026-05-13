@@ -1,4 +1,16 @@
-{% import '_includes/forms' as forms %}
+{% extends "_layouts/cp" %}
+{% import "_includes/forms" as forms %}
+
+{# Layout reads this and renders the page-tabs strip; pane visibility and
+   #hash switching are wired up by Craft's CP JS. No manual tab markup
+   or JS toggle on our side. #}
+{% set tabs = {
+    detection: { label: 'Detection'|t('app'), url: '#detection' },
+    output: { label: 'Output'|t('app'), url: '#output' },
+    typography: { label: 'Typography'|t('app'), url: '#typography' },
+} %}
+
+{% set fullPageForm = true %}
 
 {% macro overrideWarning(key, overrides) %}
     {% if overrides[key] is defined %}
@@ -10,302 +22,265 @@
 
 {% from _self import overrideWarning %}
 
-{% set tabs = {
-    detection: { label: 'Detection'|t('app'), url: '#detection' },
-    output: { label: 'Output'|t('app'), url: '#output' },
-    typography: { label: 'Typography'|t('app'), url: '#typography' },
-} %}
+{% block actionButton %}
+    <input type="submit" class="btn submit" value="{{ 'Save'|t('app') }}">
+{% endblock %}
 
-{% include '_includes/tabs.twig' with { tabs: tabs, selectedTab: 'detection' } only %}
+{% block content %}
+    <input type="hidden" name="action" value="tailwind/settings/save">
+    <input type="hidden" name="pluginHandle" value="tailwind">
+    {{ redirectInput('settings/plugins/tailwind') }}
 
-{# ===== Detection tab ===== #}
-<div id="detection">
-    {{ forms.selectField({
-        label: 'Tailwind Version',
-        instructions: 'Choose which Tailwind version to use for class merging. "Auto" detects the version from your project files.',
-        id: 'tailwindVersion',
-        name: 'tailwindVersion',
-        value: settings.tailwindVersion,
-        options: [
-            { label: 'Auto-detect', value: 'auto' },
-            { label: 'Tailwind v3', value: '3' },
-            { label: 'Tailwind v4', value: '4' },
-        ],
-        errors: settings.getErrors('tailwindVersion'),
-        disabled: overrides.tailwindVersion is defined,
-    }) }}
-    {{ overrideWarning('tailwindVersion', overrides) }}
+    {# ===== Detection tab ===== #}
+    <div id="detection">
+        {{ forms.selectField({
+            label: 'Tailwind Version',
+            instructions: 'Choose which Tailwind version to use for class merging. "Auto" detects the version from your project files.',
+            id: 'tailwindVersion',
+            name: 'settings[tailwindVersion]',
+            value: settings.tailwindVersion,
+            options: [
+                { label: 'Auto-detect', value: 'auto' },
+                { label: 'Tailwind v3', value: '3' },
+                { label: 'Tailwind v4', value: '4' },
+            ],
+            errors: settings.getErrors('tailwindVersion'),
+            disabled: overrides.tailwindVersion is defined,
+        }) }}
+        {{ overrideWarning('tailwindVersion', overrides) }}
 
-    {# Auto-detect feedback line — visible only when the selected version is `auto`. #}
-    {% set autoDetectLine %}
-        {% if autoDetectReason == 'fallback' %}
-            <p class="notice">No Tailwind signals found in this project. Falling back to <strong>Tailwind v4</strong>.</p>
-        {% else %}
-            <p class="notice">Auto-detected: <strong>Tailwind v{{ autoDetectVersion }}</strong>{% if autoDetectReason %} via <code>{{ autoDetectReason }}</code>{% endif %}.</p>
-        {% endif %}
-    {% endset %}
-    <div id="autoDetect-feedback"{% if settings.tailwindVersion != 'auto' %} style="display:none"{% endif %}>
-        {{ autoDetectLine }}
-    </div>
+        <div id="autoDetect-feedback"{% if settings.tailwindVersion != 'auto' %} style="display:none"{% endif %}>
+            {% if autoDetectReason == 'fallback' %}
+                <p class="notice">No Tailwind signals found in this project. Falling back to <strong>Tailwind v4</strong>.</p>
+            {% else %}
+                <p class="notice">Auto-detected: <strong>Tailwind v{{ autoDetectVersion }}</strong>{% if autoDetectReason %} via <code>{{ autoDetectReason }}</code>{% endif %}.</p>
+            {% endif %}
+        </div>
 
-    {{ forms.autosuggestField({
-        label: 'Buildchain Path',
-        instructions: 'Directory containing your `tailwind.config.*` files. Used for v3 detection (or v4 projects with a JS config). Leave blank to search from the project root.',
-        id: 'buildchainPath',
-        name: 'buildchainPath',
-        value: settings.buildchainPath,
-        placeholder: 'e.g. @root/buildchain',
-        suggestEnvVars: true,
-        suggestAliases: true,
-        errors: settings.getErrors('buildchainPath'),
-        disabled: overrides.buildchainPath is defined,
-    }) }}
-    {{ overrideWarning('buildchainPath', overrides) }}
-
-    <div id="cssPath-field"{% if settings.tailwindVersion == '3' %} style="display:none"{% endif %}>
         {{ forms.autosuggestField({
-            label: 'CSS Path',
-            instructions: 'Directory containing your Tailwind CSS entry file (e.g. the file with `@import "tailwindcss"` or `@theme`). Used for v4 detection. Leave blank to search from the project root.',
-            id: 'cssPath',
-            name: 'cssPath',
-            value: settings.cssPath,
-            placeholder: 'e.g. @root/src/css',
+            label: 'Buildchain Path',
+            instructions: 'Directory containing your `tailwind.config.*` files. Used for v3 detection (or v4 projects with a JS config). Leave blank to search from the project root.',
+            id: 'buildchainPath',
+            name: 'settings[buildchainPath]',
+            value: settings.buildchainPath,
+            placeholder: 'e.g. @root/buildchain',
             suggestEnvVars: true,
             suggestAliases: true,
-            errors: settings.getErrors('cssPath'),
-            disabled: overrides.cssPath is defined,
+            errors: settings.getErrors('buildchainPath'),
+            disabled: overrides.buildchainPath is defined,
         }) }}
-        {{ overrideWarning('cssPath', overrides) }}
+        {{ overrideWarning('buildchainPath', overrides) }}
+
+        <div id="cssPath-field"{% if settings.tailwindVersion == '3' %} style="display:none"{% endif %}>
+            {{ forms.autosuggestField({
+                label: 'CSS Path',
+                instructions: 'Directory containing your Tailwind CSS entry file (e.g. the file with `@import "tailwindcss"` or `@theme`). Used for v4 detection. Leave blank to search from the project root.',
+                id: 'cssPath',
+                name: 'settings[cssPath]',
+                value: settings.cssPath,
+                placeholder: 'e.g. @root/src/css',
+                suggestEnvVars: true,
+                suggestAliases: true,
+                errors: settings.getErrors('cssPath'),
+                disabled: overrides.cssPath is defined,
+            }) }}
+            {{ overrideWarning('cssPath', overrides) }}
+        </div>
     </div>
-</div>
 
-{# ===== Output tab ===== #}
-<div id="output" class="hidden">
-    {{ forms.autosuggestField({
-        label: 'Class Prefix',
-        instructions: 'Tailwind class prefix in bare form, no trailing hyphen. v3 projects: the plugin emits `tw-px-4` (matching your `prefix: \'tw-\'` config). v4 projects: the plugin emits `tw:px-4` (matching the v4 `prefix(tw)` CSS directive). Leave blank if you do not use a prefix.',
-        id: 'prefix',
-        name: 'prefix',
-        value: settings.prefix,
-        placeholder: 'e.g. tw',
-        suggestEnvVars: true,
-        errors: settings.getErrors('prefix'),
-        disabled: overrides.prefix is defined,
-    }) }}
-    {{ overrideWarning('prefix', overrides) }}
+    {# ===== Output tab ===== #}
+    <div id="output" class="hidden">
+        {{ forms.autosuggestField({
+            label: 'Class Prefix',
+            instructions: 'Tailwind class prefix in bare form, no trailing hyphen. v3 projects: the plugin emits `tw-px-4` (matching your `prefix: \'tw-\'` config). v4 projects: the plugin emits `tw:px-4` (matching the v4 `prefix(tw)` CSS directive). Leave blank if you do not use a prefix.',
+            id: 'prefix',
+            name: 'settings[prefix]',
+            value: settings.prefix,
+            placeholder: 'e.g. tw',
+            suggestEnvVars: true,
+            errors: settings.getErrors('prefix'),
+            disabled: overrides.prefix is defined,
+        }) }}
+        {{ overrideWarning('prefix', overrides) }}
 
-    {{ forms.textField({
-        label: 'Cache Size',
-        instructions: 'Maximum number of merge results to keep in the LRU cache per request. Set to 0 to disable caching.',
-        id: 'cacheSize',
-        name: 'cacheSize',
-        type: 'number',
-        value: settings.cacheSize,
-        min: 0,
-        max: 10000,
-        errors: settings.getErrors('cacheSize'),
-        disabled: overrides.cacheSize is defined,
-    }) }}
-    {{ overrideWarning('cacheSize', overrides) }}
+        {{ forms.textField({
+            label: 'Cache Size',
+            instructions: 'Maximum number of merge results to keep in the LRU cache per request. Set to 0 to disable caching.',
+            id: 'cacheSize',
+            name: 'settings[cacheSize]',
+            type: 'number',
+            value: settings.cacheSize,
+            min: 0,
+            max: 10000,
+            errors: settings.getErrors('cacheSize'),
+            disabled: overrides.cacheSize is defined,
+        }) }}
+        {{ overrideWarning('cacheSize', overrides) }}
 
-    <hr>
+        <hr>
 
-    {% set cssVarRows = [] %}
-    {% for key, value in settings.cssVariables %}
-        {% set cssVarRows = cssVarRows|merge([{ name: key, value: value }]) %}
-    {% endfor %}
+        {% set cssVarRows = [] %}
+        {% for key, value in settings.cssVariables %}
+            {% set cssVarRows = cssVarRows|merge([{ name: key, value: value }]) %}
+        {% endfor %}
 
-    {{ forms.editableTableField({
-        label: 'CSS Variables',
-        instructions: 'Define CSS custom properties that will be rendered as a `:root` style block. Variable names are automatically prefixed with `--` if missing.',
-        id: 'cssVariables',
-        name: 'cssVariables',
-        cols: {
-            name: {
-                heading: 'Variable Name',
-                type: 'singleline',
-                placeholder: '--color-brand-primary',
+        {{ forms.editableTableField({
+            label: 'CSS Variables',
+            instructions: 'Define CSS custom properties that will be rendered as a `:root` style block. Variable names are automatically prefixed with `--` if missing.',
+            id: 'cssVariables',
+            name: 'settings[cssVariables]',
+            cols: {
+                name: {
+                    heading: 'Variable Name',
+                    type: 'singleline',
+                    placeholder: '--color-brand-primary',
+                },
+                value: {
+                    heading: 'Value',
+                    type: 'singleline',
+                    placeholder: '#3490dc',
+                },
             },
-            value: {
-                heading: 'Value',
-                type: 'singleline',
-                placeholder: '#3490dc',
+            rows: cssVarRows,
+            errors: settings.getErrors('cssVariables'),
+            allowAdd: true,
+            allowDelete: true,
+            allowReorder: true,
+            disabled: overrides.cssVariables is defined,
+        }) }}
+        {{ overrideWarning('cssVariables', overrides) }}
+
+        <hr>
+
+        <h2>Auto-Inject</h2>
+
+        <p>Auto-inject renders your CSS variables as a <code>&lt;style&gt;</code> tag in every site page's <code>&lt;head&gt;</code>, so you don't need to call <code>{{ '{{ craft.tailwind.include() }}' }}</code> in your layout. Console and CP requests are never auto-injected.</p>
+
+        <p>If your site uses a dynamic per-request CSP nonce, leave this disabled and call <code>{{ '{{ craft.tailwind.include({ nonce: cspNonce }) }}' }}</code> in your layout instead.</p>
+
+        {{ forms.lightswitchField({
+            label: 'Auto-Inject CSS Variables',
+            instructions: 'When enabled, the plugin registers the CSS variables style block on every site request automatically.',
+            id: 'autoInject',
+            name: 'settings[autoInject]',
+            on: settings.autoInject,
+            errors: settings.getErrors('autoInject'),
+            disabled: overrides.autoInject is defined,
+        }) }}
+        {{ overrideWarning('autoInject', overrides) }}
+
+        {% set attrRows = [] %}
+        {% for key, value in settings.autoInjectAttributes %}
+            {% set attrRows = attrRows|merge([{ name: key, value: value }]) %}
+        {% endfor %}
+
+        {{ forms.editableTableField({
+            label: 'Auto-Inject Attributes',
+            instructions: 'HTML attributes applied to the auto-injected `<style>` tag. Common keys: `nonce` (for static CSP), `media`.',
+            id: 'autoInjectAttributes',
+            name: 'settings[autoInjectAttributes]',
+            cols: {
+                name: {
+                    heading: 'Attribute',
+                    type: 'singleline',
+                    placeholder: 'nonce',
+                },
+                value: {
+                    heading: 'Value',
+                    type: 'singleline',
+                    placeholder: 'abc123',
+                },
             },
-        },
-        rows: cssVarRows,
-        errors: settings.getErrors('cssVariables'),
-        allowAdd: true,
-        allowDelete: true,
-        allowReorder: true,
-        disabled: overrides.cssVariables is defined,
-    }) }}
-    {{ overrideWarning('cssVariables', overrides) }}
+            rows: attrRows,
+            errors: settings.getErrors('autoInjectAttributes'),
+            allowAdd: true,
+            allowDelete: true,
+            allowReorder: true,
+            disabled: overrides.autoInjectAttributes is defined,
+        }) }}
+        {{ overrideWarning('autoInjectAttributes', overrides) }}
+    </div>
 
-    <hr>
+    {# ===== Typography tab ===== #}
+    <div id="typography" class="hidden">
+        <p>Optional support for <a href="https://github.com/tailwindlabs/tailwindcss-typography" target="_blank" rel="noopener">@tailwindcss/typography</a>. When enabled, the merger resolves <code>prose-{size}</code> and <code>prose-{theme}</code> conflicts as mutually-exclusive utility groups — so <code>prose prose-sm prose-lg</code> collapses to <code>prose prose-lg</code>.</p>
 
-    <h2>Auto-Inject</h2>
+        <p>Defaults cover the suffixes shipped by the typography plugin itself (sizes: <code>sm</code>, <code>base</code>, <code>lg</code>, <code>xl</code>, <code>2xl</code>; colors: <code>gray</code>, <code>slate</code>, <code>zinc</code>, <code>neutral</code>, <code>stone</code>, <code>invert</code>). Use the lists below to register any custom suffixes you've added yourself.</p>
 
-    <p>Auto-inject renders your CSS variables as a <code>&lt;style&gt;</code> tag in every site page's <code>&lt;head&gt;</code>, so you don't need to call <code>{{ '{{ craft.tailwind.include() }}' }}</code> in your layout. Console and CP requests are never auto-injected.</p>
+        {{ forms.lightswitchField({
+            label: 'Resolve Typography Conflicts',
+            instructions: 'When enabled, `prose-{size}` and `prose-{theme}` classes merge as conflict groups.',
+            id: 'typographyEnabled',
+            name: 'settings[typography]',
+            on: settings.typography,
+            errors: settings.getErrors('typography'),
+            disabled: overrides.typography is defined,
+        }) }}
+        {{ overrideWarning('typography', overrides) }}
 
-    <p>If your site uses a dynamic per-request CSP nonce, leave this disabled and call <code>{{ '{{ craft.tailwind.include({ nonce: cspNonce }) }}' }}</code> in your layout instead.</p>
+        {% set sizeRows = settings.typographyExtraSizes|map(s => { suffix: s }) %}
 
-    {{ forms.lightswitchField({
-        label: 'Auto-Inject CSS Variables',
-        instructions: 'When enabled, the plugin registers the CSS variables style block on every site request automatically.',
-        id: 'autoInject',
-        name: 'autoInject',
-        on: settings.autoInject,
-        errors: settings.getErrors('autoInject'),
-        disabled: overrides.autoInject is defined,
-    }) }}
-    {{ overrideWarning('autoInject', overrides) }}
-
-    {% set attrRows = [] %}
-    {% for key, value in settings.autoInjectAttributes %}
-        {% set attrRows = attrRows|merge([{ name: key, value: value }]) %}
-    {% endfor %}
-
-    {{ forms.editableTableField({
-        label: 'Auto-Inject Attributes',
-        instructions: 'HTML attributes applied to the auto-injected `<style>` tag. Common keys: `nonce` (for static CSP), `media`.',
-        id: 'autoInjectAttributes',
-        name: 'autoInjectAttributes',
-        cols: {
-            name: {
-                heading: 'Attribute',
-                type: 'singleline',
-                placeholder: 'nonce',
+        {{ forms.editableTableField({
+            label: 'Extra Sizes',
+            instructions: 'Custom `prose-{size}` suffixes beyond the defaults. Enter without the `prose-` prefix (e.g. `huge` becomes `prose-huge`).',
+            id: 'typographyExtraSizes',
+            name: 'settings[typographyExtraSizes]',
+            cols: {
+                suffix: {
+                    heading: 'Suffix',
+                    type: 'singleline',
+                    placeholder: 'huge',
+                },
             },
-            value: {
-                heading: 'Value',
-                type: 'singleline',
-                placeholder: 'abc123',
+            rows: sizeRows,
+            errors: settings.getErrors('typographyExtraSizes'),
+            allowAdd: true,
+            allowDelete: true,
+            allowReorder: true,
+            disabled: overrides.typographyExtraSizes is defined,
+        }) }}
+        {{ overrideWarning('typographyExtraSizes', overrides) }}
+
+        {% set colorRows = settings.typographyExtraColors|map(s => { suffix: s }) %}
+
+        {{ forms.editableTableField({
+            label: 'Extra Colors',
+            instructions: 'Custom `prose-{color}` or `prose-{theme}` suffixes beyond the defaults. Enter without the `prose-` prefix (e.g. `mybrand` becomes `prose-mybrand`).',
+            id: 'typographyExtraColors',
+            name: 'settings[typographyExtraColors]',
+            cols: {
+                suffix: {
+                    heading: 'Suffix',
+                    type: 'singleline',
+                    placeholder: 'mybrand',
+                },
             },
-        },
-        rows: attrRows,
-        errors: settings.getErrors('autoInjectAttributes'),
-        allowAdd: true,
-        allowDelete: true,
-        allowReorder: true,
-        disabled: overrides.autoInjectAttributes is defined,
-    }) }}
-    {{ overrideWarning('autoInjectAttributes', overrides) }}
-</div>
-
-{# ===== Typography tab ===== #}
-<div id="typography" class="hidden">
-    <p>Optional support for <a href="https://github.com/tailwindlabs/tailwindcss-typography" target="_blank" rel="noopener">@tailwindcss/typography</a>. When enabled, the merger resolves <code>prose-{size}</code> and <code>prose-{theme}</code> conflicts as mutually-exclusive utility groups — so <code>prose prose-sm prose-lg</code> collapses to <code>prose prose-lg</code>.</p>
-
-    <p>Defaults cover the suffixes shipped by the typography plugin itself (sizes: <code>sm</code>, <code>base</code>, <code>lg</code>, <code>xl</code>, <code>2xl</code>; colors: <code>gray</code>, <code>slate</code>, <code>zinc</code>, <code>neutral</code>, <code>stone</code>, <code>invert</code>). Use the lists below to register any custom suffixes you've added yourself.</p>
-
-    {{ forms.lightswitchField({
-        label: 'Resolve Typography Conflicts',
-        instructions: 'When enabled, `prose-{size}` and `prose-{theme}` classes merge as conflict groups.',
-        id: 'typographyEnabled',
-        name: 'typography',
-        on: settings.typography,
-        errors: settings.getErrors('typography'),
-        disabled: overrides.typography is defined,
-    }) }}
-    {{ overrideWarning('typography', overrides) }}
-
-    {% set sizeRows = settings.typographyExtraSizes|map(s => { suffix: s }) %}
-
-    {{ forms.editableTableField({
-        label: 'Extra Sizes',
-        instructions: 'Custom `prose-{size}` suffixes beyond the defaults. Enter without the `prose-` prefix (e.g. `huge` becomes `prose-huge`).',
-        id: 'typographyExtraSizes',
-        name: 'typographyExtraSizes',
-        cols: {
-            suffix: {
-                heading: 'Suffix',
-                type: 'singleline',
-                placeholder: 'huge',
-            },
-        },
-        rows: sizeRows,
-        errors: settings.getErrors('typographyExtraSizes'),
-        allowAdd: true,
-        allowDelete: true,
-        allowReorder: true,
-        disabled: overrides.typographyExtraSizes is defined,
-    }) }}
-    {{ overrideWarning('typographyExtraSizes', overrides) }}
-
-    {% set colorRows = settings.typographyExtraColors|map(s => { suffix: s }) %}
-
-    {{ forms.editableTableField({
-        label: 'Extra Colors',
-        instructions: 'Custom `prose-{color}` or `prose-{theme}` suffixes beyond the defaults. Enter without the `prose-` prefix (e.g. `mybrand` becomes `prose-mybrand`).',
-        id: 'typographyExtraColors',
-        name: 'typographyExtraColors',
-        cols: {
-            suffix: {
-                heading: 'Suffix',
-                type: 'singleline',
-                placeholder: 'mybrand',
-            },
-        },
-        rows: colorRows,
-        errors: settings.getErrors('typographyExtraColors'),
-        allowAdd: true,
-        allowDelete: true,
-        allowReorder: true,
-        disabled: overrides.typographyExtraColors is defined,
-    }) }}
-    {{ overrideWarning('typographyExtraColors', overrides) }}
-</div>
+            rows: colorRows,
+            errors: settings.getErrors('typographyExtraColors'),
+            allowAdd: true,
+            allowDelete: true,
+            allowReorder: true,
+            disabled: overrides.typographyExtraColors is defined,
+        }) }}
+        {{ overrideWarning('typographyExtraColors', overrides) }}
+    </div>
+{% endblock %}
 
 {% js %}
 (function() {
     var versionSelect = document.getElementById('tailwindVersion');
     var cssPathField = document.getElementById('cssPath-field');
     var autoDetectFeedback = document.getElementById('autoDetect-feedback');
-    if (versionSelect) {
-        versionSelect.addEventListener('change', function() {
-            if (cssPathField) {
-                cssPathField.style.display = this.value === '3' ? 'none' : '';
-            }
-            if (autoDetectFeedback) {
-                autoDetectFeedback.style.display = this.value === 'auto' ? '' : 'none';
-            }
-        });
+    if (!versionSelect) {
+        return;
     }
-
-    // Tab switching: the pane-tabs include renders <a role="tab" href="#paneId">
-    // links. Toggle the matching content div's `hidden` class on click and
-    // mark the active tab `sel`. Hash-restore on initial load so refreshing
-    // a deep-linked tab URL keeps the user on the same pane.
-    var tabIds = ['detection', 'output', 'typography'];
-    function showTab(target) {
-        if (tabIds.indexOf(target) === -1) {
-            return;
+    versionSelect.addEventListener('change', function() {
+        if (cssPathField) {
+            cssPathField.style.display = this.value === '3' ? 'none' : '';
         }
-        tabIds.forEach(function(id) {
-            var pane = document.getElementById(id);
-            if (pane) {
-                pane.classList.toggle('hidden', id !== target);
-            }
-        });
-        document.querySelectorAll('.pane-tabs [role="tab"]').forEach(function(tab) {
-            var isActive = tab.getAttribute('href') === '#' + target;
-            tab.classList.toggle('sel', isActive);
-            tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
-            tab.setAttribute('tabindex', isActive ? '0' : '-1');
-        });
-    }
-    document.querySelectorAll('.pane-tabs [role="tab"]').forEach(function(tab) {
-        tab.addEventListener('click', function(event) {
-            event.preventDefault();
-            var target = (tab.getAttribute('href') || '').replace(/^#/, '');
-            showTab(target);
-            if (history && history.replaceState) {
-                history.replaceState(null, '', '#' + target);
-            }
-        });
+        if (autoDetectFeedback) {
+            autoDetectFeedback.style.display = this.value === 'auto' ? '' : 'none';
+        }
     });
-    if (window.location.hash) {
-        showTab(window.location.hash.replace(/^#/, ''));
-    }
 })();
 {% endjs %}

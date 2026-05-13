@@ -10,8 +10,12 @@ namespace craftpulse\tailwind;
 use Craft;
 use craft\base\Model;
 use craft\base\Plugin as BasePlugin;
+use craft\events\RegisterUrlRulesEvent;
+use craft\helpers\UrlHelper;
 use craft\web\Application;
+
 use craft\web\twig\variables\CraftVariable;
+use craft\web\UrlManager;
 use craft\web\View;
 
 use craftpulse\tailwind\debug\TailwindPanel;
@@ -22,6 +26,7 @@ use craftpulse\tailwind\variables\TailwindVariable;
 
 use yii\base\Application as BaseApplication;
 use yii\base\Event;
+use yii\base\InvalidRouteException;
 use yii\debug\Module as DebugModule;
 
 /**
@@ -86,6 +91,30 @@ class Plugin extends BasePlugin
         $this->_registerVariables();
         $this->_registerAutoInject();
         $this->_registerDebugPanel();
+        $this->_registerCpUrlRules();
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * Routes plugin-settings link clicks (from Settings › Plugins) to our
+     * own settings controller so the page renders into `_layouts/cp` and
+     * Craft's page-tabs strip can read the `tabs` variable directly. The
+     * default `settingsHtml()` path embeds returned HTML in a fixed wrapper
+     * that has no slot for the tab strip.
+     *
+     * @return mixed
+     *
+     * @throws InvalidRouteException
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function getSettingsResponse(): mixed
+    {
+        return Craft::$app->getResponse()->redirect(
+            UrlHelper::cpUrl('tailwind/settings'),
+        );
     }
 
     // Protected Methods
@@ -100,54 +129,6 @@ class Plugin extends BasePlugin
     protected function createSettingsModel(): ?Model
     {
         return new Settings();
-    }
-
-    /**
-     * Returns the rendered HTML for the plugin settings page.
-     *
-     * @return ?string The settings HTML.
-     *
-     * @throws \Twig\Error\LoaderError
-     * @throws \Twig\Error\RuntimeError
-     * @throws \Twig\Error\SyntaxError
-     * @throws \yii\base\Exception
-     *
-     * @author CraftPulse
-     * @since 5.0.0
-     */
-    protected function settingsHtml(): ?string
-    {
-        // `Craft::$app` is statically typed as `yii\base\Application`, which
-        // doesn't expose Craft's `getConfig()` / `getView()`. The CP only
-        // calls `settingsHtml()` from a web request, so a single web-app
-        // cast covers both sites without a runtime instanceof check.
-        /** @var \craft\web\Application $app */
-        $app = Craft::$app;
-
-        $settings = $this->getSettings();
-
-        // Pre-compute the auto-detect result so the settings template can
-        // surface "v3 detected via tailwind.config.js" to the editor. The
-        // detector is request-scoped so re-running it here costs at most a
-        // handful of file_exists calls; the result is then served from
-        // memo on any later detect() call in the same request.
-        $detector = $this->versionDetector;
-        $autoDetectVersion = $detector->detect(
-            'auto',
-            $settings->buildchainPath,
-            $settings->cssPath,
-        );
-        $autoDetectReason = $detector->getLastReason();
-
-        return $app->getView()->renderTemplate(
-            'tailwind/settings',
-            [
-                'settings' => $settings,
-                'overrides' => $app->getConfig()->getConfigFromFile('tailwind'),
-                'autoDetectVersion' => $autoDetectVersion,
-                'autoDetectReason' => $autoDetectReason,
-            ],
-        );
     }
 
     // Private Methods
@@ -272,6 +253,35 @@ class Plugin extends BasePlugin
                 ]);
 
                 self::$plugin?->tailwind->enableRecording();
+            },
+        );
+    }
+
+    /**
+     * Registers CP URL rules so the plugin-settings link routes to our
+     * SettingsController rather than the default Craft plugin-settings
+     * page wrapper. Three forms point at the same `edit` action so a CP
+     * nav click, a typed-in `/tailwind/settings` URL, and Craft's own
+     * `settings/plugins/<handle>` redirect all land in the same place.
+     *
+     * @return void
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    private function _registerCpUrlRules(): void
+    {
+        Event::on(
+            UrlManager::class,
+            UrlManager::EVENT_REGISTER_CP_URL_RULES,
+            static function(RegisterUrlRulesEvent $event): void {
+                $event->rules = array_merge(
+                    [
+                        'tailwind' => 'tailwind/settings/edit',
+                        'tailwind/settings' => 'tailwind/settings/edit',
+                    ],
+                    $event->rules,
+                );
             },
         );
     }
