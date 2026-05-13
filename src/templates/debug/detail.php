@@ -22,30 +22,49 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
 ?>
 
 <style>
-    .tailwind-panel .label {
-        padding: 2px 6px;
-        border-radius: 3px;
-        color: #fff;
+    .tailwind-panel p {
+        margin: 0 0 6px;
     }
 
-    .tailwind-panel .label-resolved {
-        background: #f0ad4e;
+    /* Force monospace on inline code regardless of how the Yii toolbar's
+       cascade resolves <code> defaults — some toolbar themes flatten it
+       to the body sans-serif. */
+    .tailwind-panel code {
+        font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.95em;
     }
 
-    .tailwind-panel .label-passthrough {
-        background: #999;
+    /* Vertically center cell contents so the status indicator sits with
+       the input/output text when long class lists wrap the row. */
+    .tailwind-panel table td,
+    .tailwind-panel table th {
+        vertical-align: middle;
+    }
+
+    /* Status indicators: text + color, sized to read at a glance without
+       relying on color alone. Contrast on white meets WCAG AA. */
+    .tailwind-panel .status {
+        display: inline-block;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75em;
+        letter-spacing: 0.04em;
+    }
+
+    .tailwind-panel .status-resolved {
+        color: #b25000;
+    }
+
+    .tailwind-panel .status-passthrough {
+        color: #666;
     }
 
     .tailwind-panel .output-resolved {
-        color: #5cb85c;
+        color: #2a7e2a;
     }
 
     .tailwind-panel .muted {
-        color: #999;
-    }
-
-    .tailwind-panel p {
-        margin: 0 0 6px;
+        color: #666;
     }
 </style>
 
@@ -90,9 +109,9 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
                         <td><?= (int) $merge['count'] ?></td>
                         <td>
                             <?php if ($merge['resolved']): ?>
-                                <span class="label label-resolved">resolved</span>
+                                <span class="status status-resolved">resolved</span>
                             <?php else: ?>
-                                <span class="label label-passthrough">passthrough</span>
+                                <span class="status status-passthrough">passthrough</span>
                             <?php endif; ?>
                         </td>
                         <td><code><?= Html::encode($merge['input']) ?></code></td>
