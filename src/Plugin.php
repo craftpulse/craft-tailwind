@@ -13,7 +13,6 @@ use craft\base\Plugin as BasePlugin;
 use craft\events\RegisterUrlRulesEvent;
 use craft\helpers\UrlHelper;
 use craft\web\Application;
-
 use craft\web\twig\variables\CraftVariable;
 use craft\web\UrlManager;
 use craft\web\View;
@@ -69,6 +68,14 @@ class Plugin extends BasePlugin
      */
     public bool $hasCpSettings = true;
 
+    /**
+     * @var bool Whether the settings page is viewable when `allowAdminChanges`
+     * is disabled. Matches Craft's first-party behavior for plugins that
+     * surface settings — editors can still see what's configured in production
+     * even though they cannot change it.
+     */
+    public bool $hasReadOnlyCpSettings = true;
+
     // Public Methods
     // =========================================================================
 
@@ -111,6 +118,28 @@ class Plugin extends BasePlugin
      * @since 5.0.0
      */
     public function getSettingsResponse(): mixed
+    {
+        return Craft::$app->getResponse()->redirect(
+            UrlHelper::cpUrl('tailwind/settings'),
+        );
+    }
+
+    /**
+     * @inheritdoc
+     *
+     * Mirrors `getSettingsResponse()` for the read-only flow Craft enters
+     * when `allowAdminChanges` is disabled. The `SettingsController` derives
+     * read-only state from the same config flag, so both entry points land
+     * on the same URL and the template handles the disabled-fields render.
+     *
+     * @return mixed
+     *
+     * @throws InvalidRouteException
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function getReadOnlySettingsResponse(): mixed
     {
         return Craft::$app->getResponse()->redirect(
             UrlHelper::cpUrl('tailwind/settings'),

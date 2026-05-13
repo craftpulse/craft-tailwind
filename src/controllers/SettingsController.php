@@ -39,6 +39,10 @@ class SettingsController extends Controller
     /**
      * @inheritdoc
      *
+     * Requires an admin user for every action; the `allowAdminChanges`
+     * gate is enforced per-action so the view can render read-only in
+     * production while saves remain blocked.
+     *
      * @throws ForbiddenHttpException
      *
      * @author CraftPulse
@@ -46,17 +50,28 @@ class SettingsController extends Controller
      */
     public function beforeAction($action): bool
     {
-        $this->requireAdmin();
+        $this->requireAdmin(false);
 
         return parent::beforeAction($action);
     }
 
     /**
-     * Renders the plugin settings form.
+     * Renders the plugin settings form. Displays read-only when
+     * `allowAdminChanges` is disabled so editors can still inspect
+     * the configured values in production.
+     *
+     * The `$plugin` parameter is the route-param fallback used after a
+     * failed save in `actionSave()` — passing the in-memory plugin with
+     * populated validation errors so the form can re-render them.
+     *
+     * @param ?Plugin $plugin The plugin instance forwarded from a failed
+     *                        save, or `null` to fall back to the registered
+     *                        singleton.
      *
      * @return ?Response
      *
      * @throws ForbiddenHttpException
+     * @throws NotFoundHttpException
      * @throws \yii\base\Exception
      * @throws \Twig\Error\LoaderError
      * @throws \Twig\Error\RuntimeError
@@ -65,17 +80,9 @@ class SettingsController extends Controller
      * @author CraftPulse
      * @since 5.0.0
      */
-    public function actionEdit(): ?Response
+    public function actionEdit(?Plugin $plugin = null): ?Response
     {
-        $general = Craft::$app->getConfig()->getGeneral();
-
-        if (!$general->allowAdminChanges) {
-            throw new ForbiddenHttpException(
-                'Unable to edit Tailwind plugin settings because admin changes are disabled in this environment.',
-            );
-        }
-
-        $plugin = Plugin::$plugin;
+        $plugin ??= Plugin::$plugin;
 
         if ($plugin === null) {
             throw new NotFoundHttpException('Tailwind plugin not loaded.');
@@ -92,11 +99,11 @@ class SettingsController extends Controller
             $settings->cssPath,
         );
 
+        $readOnly = !Craft::$app->getConfig()->getGeneral()->allowAdminChanges;
         $pluginName = 'Tailwind';
         $title = Craft::t('tailwind', 'Plugin Settings');
 
         return $this->renderTemplate('tailwind/settings', [
-            'fullPageForm' => true,
             'pluginName' => $pluginName,
             'title' => $title,
             'docTitle' => sprintf('%s - %s', $pluginName, $title),
@@ -114,6 +121,7 @@ class SettingsController extends Controller
             'overrides' => Craft::$app->getConfig()->getConfigFromFile('tailwind'),
             'autoDetectVersion' => $autoDetectVersion,
             'autoDetectReason' => $detector->getLastReason(),
+            'readOnly' => $readOnly,
         ]);
     }
 
@@ -131,15 +139,8 @@ class SettingsController extends Controller
      */
     public function actionSave(): ?Response
     {
+        $this->requireAdmin();
         $this->requirePostRequest();
-
-        $general = Craft::$app->getConfig()->getGeneral();
-
-        if (!$general->allowAdminChanges) {
-            throw new ForbiddenHttpException(
-                'Unable to save Tailwind plugin settings because admin changes are disabled in this environment.',
-            );
-        }
 
         $request = Craft::$app->getRequest();
         $pluginHandle = $request->getRequiredBodyParam('pluginHandle');

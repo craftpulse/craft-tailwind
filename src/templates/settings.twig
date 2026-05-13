@@ -5,31 +5,38 @@
    #hash switching are wired up by Craft's CP JS. No manual tab markup
    or JS toggle on our side. #}
 {% set tabs = {
-    detection: { label: 'Detection'|t('app'), url: '#detection' },
-    output: { label: 'Output'|t('app'), url: '#output' },
-    typography: { label: 'Typography'|t('app'), url: '#typography' },
+    detection: { label: 'Detection'|t('tailwind'), url: '#detection' },
+    output: { label: 'Output'|t('tailwind'), url: '#output' },
+    typography: { label: 'Typography'|t('tailwind'), url: '#typography' },
 } %}
+{% set selectedTab = 'detection' %}
 
-{% set fullPageForm = true %}
+{% set fullPageForm = not readOnly %}
 
-{% macro overrideWarning(key, overrides) %}
-    {% if overrides[key] is defined %}
-        <p class="warning with-icon">
-            This setting is overridden by <code>config/tailwind.php</code>.
-        </p>
-    {% endif %}
-{% endmacro %}
+{% if readOnly %}
+    {% set contentNotice = readOnlyNotice() %}
+{% endif %}
+
+{% macro overrideWarning(key, overrides) -%}
+    {%- if overrides[key] is defined -%}
+        {{- 'This setting is overridden by `config/tailwind.php`.'|t('tailwind') -}}
+    {%- endif -%}
+{%- endmacro %}
 
 {% from _self import overrideWarning %}
 
 {% block actionButton %}
-    <input type="submit" class="btn submit" value="{{ 'Save'|t('app') }}">
+    {% if not readOnly %}
+        <input type="submit" class="btn submit" value="{{ 'Save'|t('app') }}">
+    {% endif %}
 {% endblock %}
 
 {% block content %}
-    <input type="hidden" name="action" value="tailwind/settings/save">
-    <input type="hidden" name="pluginHandle" value="tailwind">
-    {{ redirectInput('settings/plugins/tailwind') }}
+    {% if not readOnly %}
+        {{ actionInput('tailwind/settings/save') }}
+        {{ hiddenInput('pluginHandle', 'tailwind') }}
+        {{ redirectInput('settings/plugins/tailwind') }}
+    {% endif %}
 
     {# ===== Detection tab ===== #}
     <div id="detection">
@@ -45,9 +52,9 @@
                 { label: 'Tailwind v4', value: '4' },
             ],
             errors: settings.getErrors('tailwindVersion'),
-            disabled: overrides.tailwindVersion is defined,
+            disabled: overrides.tailwindVersion is defined or readOnly,
+            warning: overrideWarning('tailwindVersion', overrides),
         }) }}
-        {{ overrideWarning('tailwindVersion', overrides) }}
 
         <div id="autoDetect-feedback"{% if settings.tailwindVersion != 'auto' %} style="display:none"{% endif %}>
             {% if autoDetectReason == 'fallback' %}
@@ -67,9 +74,9 @@
             suggestEnvVars: true,
             suggestAliases: true,
             errors: settings.getErrors('buildchainPath'),
-            disabled: overrides.buildchainPath is defined,
+            disabled: overrides.buildchainPath is defined or readOnly,
+            warning: overrideWarning('buildchainPath', overrides),
         }) }}
-        {{ overrideWarning('buildchainPath', overrides) }}
 
         <div id="cssPath-field"{% if settings.tailwindVersion == '3' %} style="display:none"{% endif %}>
             {{ forms.autosuggestField({
@@ -82,9 +89,9 @@
                 suggestEnvVars: true,
                 suggestAliases: true,
                 errors: settings.getErrors('cssPath'),
-                disabled: overrides.cssPath is defined,
+                disabled: overrides.cssPath is defined or readOnly,
+                warning: overrideWarning('cssPath', overrides),
             }) }}
-            {{ overrideWarning('cssPath', overrides) }}
         </div>
     </div>
 
@@ -99,9 +106,9 @@
             placeholder: 'e.g. tw',
             suggestEnvVars: true,
             errors: settings.getErrors('prefix'),
-            disabled: overrides.prefix is defined,
+            disabled: overrides.prefix is defined or readOnly,
+            warning: overrideWarning('prefix', overrides),
         }) }}
-        {{ overrideWarning('prefix', overrides) }}
 
         {{ forms.textField({
             label: 'Cache Size',
@@ -113,9 +120,9 @@
             min: 0,
             max: 10000,
             errors: settings.getErrors('cacheSize'),
-            disabled: overrides.cacheSize is defined,
+            disabled: overrides.cacheSize is defined or readOnly,
+            warning: overrideWarning('cacheSize', overrides),
         }) }}
-        {{ overrideWarning('cacheSize', overrides) }}
 
         <hr>
 
@@ -146,9 +153,9 @@
             allowAdd: true,
             allowDelete: true,
             allowReorder: true,
-            disabled: overrides.cssVariables is defined,
+            disabled: overrides.cssVariables is defined or readOnly,
+            warning: overrideWarning('cssVariables', overrides),
         }) }}
-        {{ overrideWarning('cssVariables', overrides) }}
 
         <hr>
 
@@ -165,9 +172,9 @@
             name: 'settings[autoInject]',
             on: settings.autoInject,
             errors: settings.getErrors('autoInject'),
-            disabled: overrides.autoInject is defined,
+            disabled: overrides.autoInject is defined or readOnly,
+            warning: overrideWarning('autoInject', overrides),
         }) }}
-        {{ overrideWarning('autoInject', overrides) }}
 
         {% set attrRows = [] %}
         {% for key, value in settings.autoInjectAttributes %}
@@ -196,9 +203,9 @@
             allowAdd: true,
             allowDelete: true,
             allowReorder: true,
-            disabled: overrides.autoInjectAttributes is defined,
+            disabled: overrides.autoInjectAttributes is defined or readOnly,
+            warning: overrideWarning('autoInjectAttributes', overrides),
         }) }}
-        {{ overrideWarning('autoInjectAttributes', overrides) }}
     </div>
 
     {# ===== Typography tab ===== #}
@@ -214,9 +221,9 @@
             name: 'settings[typography]',
             on: settings.typography,
             errors: settings.getErrors('typography'),
-            disabled: overrides.typography is defined,
+            disabled: overrides.typography is defined or readOnly,
+            warning: overrideWarning('typography', overrides),
         }) }}
-        {{ overrideWarning('typography', overrides) }}
 
         {% set sizeRows = settings.typographyExtraSizes|map(s => { suffix: s }) %}
 
@@ -237,9 +244,9 @@
             allowAdd: true,
             allowDelete: true,
             allowReorder: true,
-            disabled: overrides.typographyExtraSizes is defined,
+            disabled: overrides.typographyExtraSizes is defined or readOnly,
+            warning: overrideWarning('typographyExtraSizes', overrides),
         }) }}
-        {{ overrideWarning('typographyExtraSizes', overrides) }}
 
         {% set colorRows = settings.typographyExtraColors|map(s => { suffix: s }) %}
 
@@ -260,9 +267,9 @@
             allowAdd: true,
             allowDelete: true,
             allowReorder: true,
-            disabled: overrides.typographyExtraColors is defined,
+            disabled: overrides.typographyExtraColors is defined or readOnly,
+            warning: overrideWarning('typographyExtraColors', overrides),
         }) }}
-        {{ overrideWarning('typographyExtraColors', overrides) }}
     </div>
 {% endblock %}
 
