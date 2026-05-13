@@ -50,6 +50,18 @@ class VersionDetector extends Component
      */
     private ?string $_detectedVersion = null;
 
+    /**
+     * Signal that produced the cached detection result.
+     *
+     * One of: a file name (e.g. `tailwind.config.js`, `app.css`),
+     * `'configured'` when the version was set explicitly, or
+     * `'fallback'` when auto-detection found no signals. `null`
+     * until a detection runs in the current request.
+     *
+     * @var ?string
+     */
+    private ?string $_detectionReason = null;
+
     // Public Methods
     // =========================================================================
 
@@ -77,6 +89,7 @@ class VersionDetector extends Component
     ): string {
         // If explicitly configured, return immediately
         if ($configuredVersion !== 'auto') {
+            $this->_detectionReason = 'configured';
             return $configuredVersion;
         }
 
@@ -90,26 +103,47 @@ class VersionDetector extends Component
         $effectiveBuildchainPath = $buildchainPath ?? $root;
 
         // Priority 1: CSS signals (v4 is definitively detected even if a legacy config exists)
-        $cssResult = $this->_detectFromCssFiles($effectiveCssPath);
+        [$cssResult, $cssSource] = $this->_detectFromCssFiles($effectiveCssPath);
 
         if ($cssResult !== null) {
             $this->_detectedVersion = $cssResult;
+            $this->_detectionReason = $cssSource;
             return $this->_detectedVersion;
         }
 
         // Priority 2: Config file signals
-        $configResult = $this->_detectFromConfigFiles($effectiveBuildchainPath);
+        [$configResult, $configSource] = $this->_detectFromConfigFiles($effectiveBuildchainPath);
 
         if ($configResult !== null) {
             $this->_detectedVersion = $configResult;
+            $this->_detectionReason = $configSource;
             return $this->_detectedVersion;
         }
 
         // Fallback: v4 is the forward path
         $this->_logDetectionFallback();
         $this->_detectedVersion = self::VERSION_4;
+        $this->_detectionReason = 'fallback';
 
         return $this->_detectedVersion;
+    }
+
+    /**
+     * Returns the signal that produced the most recent detection result.
+     *
+     * One of: a file name (e.g. `tailwind.config.js`, `app.css`),
+     * `'configured'` when the version was set explicitly, or
+     * `'fallback'` when auto-detection found no signals. Returns `null`
+     * when `detect()` has not yet run in the current request.
+     *
+     * @return ?string The signal source, or null when nothing has run.
+     *
+     * @author CraftPulse
+     * @since 5.0.0
+     */
+    public function getLastReason(): ?string
+    {
+        return $this->_detectionReason;
     }
 
     /**
@@ -125,6 +159,7 @@ class VersionDetector extends Component
     public function clearCache(): void
     {
         $this->_detectedVersion = null;
+        $this->_detectionReason = null;
     }
 
     // Private Methods
@@ -167,15 +202,15 @@ class VersionDetector extends Component
      *
      * @param string $searchPath The directory to scan for CSS files.
      *
-     * @return ?string '4' if v4 signals found, null otherwise.
+     * @return array{0: ?string, 1: ?string} `['4', filename]` if v4 signals found, `[null, null]` otherwise.
      *
      * @author CraftPulse
      * @since 5.0.0
      */
-    private function _detectFromCssFiles(string $searchPath): ?string
+    private function _detectFromCssFiles(string $searchPath): array
     {
         if (!is_dir($searchPath)) {
-            return null;
+            return [null, null];
         }
 
         // Two glob calls instead of `*.{css,pcss}` with GLOB_BRACE,
@@ -186,7 +221,7 @@ class VersionDetector extends Component
         );
 
         if ($cssFiles === []) {
-            return null;
+            return [null, null];
         }
 
         foreach ($cssFiles as $cssFile) {
@@ -197,15 +232,15 @@ class VersionDetector extends Component
             }
 
             if (preg_match('/@import\s+["\']tailwindcss["\']/', $contents)) {
-                return self::VERSION_4;
+                return [self::VERSION_4, basename($cssFile)];
             }
 
             if (preg_match('/@theme\b/', $contents)) {
-                return self::VERSION_4;
+                return [self::VERSION_4, basename($cssFile)];
             }
         }
 
-        return null;
+        return [null, null];
     }
 
     /**
@@ -216,15 +251,15 @@ class VersionDetector extends Component
      *
      * @param string $searchPath The directory to scan for config files.
      *
-     * @return ?string '3' if config files found, null otherwise.
+     * @return array{0: ?string, 1: ?string} `['3', filename]` if config files found, `[null, null]` otherwise.
      *
      * @author CraftPulse
      * @since 5.0.0
      */
-    private function _detectFromConfigFiles(string $searchPath): ?string
+    private function _detectFromConfigFiles(string $searchPath): array
     {
         if (!is_dir($searchPath)) {
-            return null;
+            return [null, null];
         }
 
         $configFiles = [
@@ -236,11 +271,11 @@ class VersionDetector extends Component
 
         foreach ($configFiles as $file) {
             if (file_exists($searchPath . DIRECTORY_SEPARATOR . $file)) {
-                return self::VERSION_3;
+                return [self::VERSION_3, $file];
             }
         }
 
-        return null;
+        return [null, null];
     }
 
     /**
