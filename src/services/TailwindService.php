@@ -46,6 +46,16 @@ class TailwindService extends Component
     private const CALL_SITE_TRACE_DEPTH = 25;
 
     /**
+     * Yii profile category for every `merge()` call.
+     *
+     * Surfaces in the Time / Performance Profiling debug panels so a user
+     * can filter on `tailwind merge` to see exactly how much of a request's
+     * timeline the plugin owns, the same way the rest of Craft surfaces DB
+     * queries and Twig renders.
+     */
+    private const PROFILE_CATEGORY = 'tailwind merge';
+
+    /**
      * Hard cap on unique merge inputs recorded for the debug panel.
      *
      * Recording is gated on the Yii debug module so this only matters in
@@ -208,32 +218,45 @@ class TailwindService extends Component
             return '';
         }
 
-        if (isset($this->_cache[$input])) {
-            $result = $this->_cache[$input];
+        // Yii profiling tokens — when the debug toolbar is active, every
+        // merge call surfaces in the Time / Performance Profiling panel
+        // alongside the request's DB queries and Twig renders. The category
+        // is consistent so users can filter `tailwind merge` to isolate
+        // the plugin's footprint, and the token holds the merge input
+        // (truncated when long) so individual call sites are identifiable.
+        $token = strlen($input) > 80 ? substr($input, 0, 77) . '...' : $input;
+        Craft::beginProfile($token, self::PROFILE_CATEGORY);
 
-            // Move to end (LRU touch) — unset + set is O(1) and preserves
-            // PHP's insertion-order array semantics.
-            unset($this->_cache[$input]);
-            $this->_cache[$input] = $result;
+        try {
+            if (isset($this->_cache[$input])) {
+                $result = $this->_cache[$input];
 
-            $this->_cacheHitCount++;
+                // Move to end (LRU touch) — unset + set is O(1) and preserves
+                // PHP's insertion-order array semantics.
+                unset($this->_cache[$input]);
+                $this->_cache[$input] = $result;
+
+                $this->_cacheHitCount++;
+
+                if ($this->_recording) {
+                    $this->_recordMerge($input, $result);
+                }
+
+                return $result;
+            }
+
+            $result = $this->_getMerger()->merge($input);
+            $this->_addToCache($input, $result);
+            $this->_cacheMissCount++;
 
             if ($this->_recording) {
                 $this->_recordMerge($input, $result);
             }
 
             return $result;
+        } finally {
+            Craft::endProfile($token, self::PROFILE_CATEGORY);
         }
-
-        $result = $this->_getMerger()->merge($input);
-        $this->_addToCache($input, $result);
-        $this->_cacheMissCount++;
-
-        if ($this->_recording) {
-            $this->_recordMerge($input, $result);
-        }
-
-        return $result;
     }
 
     /**
