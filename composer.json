@@ -17,8 +17,8 @@
     "require": {
         "php": "^8.2",
         "craftcms/cms": "^5.0.0",
-        "gehrisandro/tailwind-merge-php": "^1.2",
-        "tales-from-a-dev/tailwind-merge-php": "^0.2"
+        "michtio/tailwind-merge-v3": "^1.2",
+        "michtio/tailwind-merge-v4": "^0.3"
     },
     "require-dev": {
         "craftcms/ecs": "dev-main",
