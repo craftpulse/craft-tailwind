@@ -26,27 +26,42 @@
 }) }}
 {{ overrideWarning('tailwindVersion', overrides) }}
 
-{{ forms.textField({
+{# Auto-detect feedback line — visible only when the selected version is `auto`. #}
+{% set autoDetectLine %}
+    {% if autoDetectReason == 'fallback' %}
+        <p class="notice">No Tailwind signals found in this project. Falling back to <strong>Tailwind v4</strong>.</p>
+    {% else %}
+        <p class="notice">Auto-detected: <strong>Tailwind v{{ autoDetectVersion }}</strong>{% if autoDetectReason %} via <code>{{ autoDetectReason }}</code>{% endif %}.</p>
+    {% endif %}
+{% endset %}
+<div id="autoDetect-feedback"{% if settings.tailwindVersion != 'auto' %} style="display:none"{% endif %}>
+    {{ autoDetectLine }}
+</div>
+
+{{ forms.autosuggestField({
     label: 'Buildchain Path',
     instructions: 'Directory containing your `tailwind.config.*` files. Used for v3 detection (or v4 projects with a JS config). Leave blank to search from the project root.',
     id: 'buildchainPath',
     name: 'buildchainPath',
     value: settings.buildchainPath,
-    placeholder: 'e.g. buildchain',
+    placeholder: 'e.g. @root/buildchain',
+    suggestEnvVars: true,
+    suggestAliases: true,
     errors: settings.getErrors('buildchainPath'),
     disabled: overrides.buildchainPath is defined,
 }) }}
 {{ overrideWarning('buildchainPath', overrides) }}
 
-{% set showCssPath = settings.tailwindVersion in ['auto', '4'] %}
-<div id="cssPath-field"{% if not showCssPath %} class="hidden"{% endif %}>
-    {{ forms.textField({
+<div id="cssPath-field"{% if settings.tailwindVersion == '3' %} style="display:none"{% endif %}>
+    {{ forms.autosuggestField({
         label: 'CSS Path',
         instructions: 'Directory containing your Tailwind CSS entry file (e.g. the file with `@import "tailwindcss"` or `@theme`). Used for v4 detection. Leave blank to search from the project root.',
         id: 'cssPath',
         name: 'cssPath',
         value: settings.cssPath,
-        placeholder: 'e.g. src/css',
+        placeholder: 'e.g. @root/src/css',
+        suggestEnvVars: true,
+        suggestAliases: true,
         errors: settings.getErrors('cssPath'),
         disabled: overrides.cssPath is defined,
     }) }}
@@ -55,17 +70,20 @@
 
 {% js %}
 (function() {
-    const versionSelect = document.getElementById('tailwindVersion');
-    const cssPathField = document.getElementById('cssPath-field');
-    if (versionSelect && cssPathField) {
-        versionSelect.addEventListener('change', function() {
-            if (this.value === 'auto' || this.value === '4') {
-                cssPathField.classList.remove('hidden');
-            } else {
-                cssPathField.classList.add('hidden');
-            }
-        });
+    var versionSelect = document.getElementById('tailwindVersion');
+    var cssPathField = document.getElementById('cssPath-field');
+    var autoDetectFeedback = document.getElementById('autoDetect-feedback');
+    if (!versionSelect) {
+        return;
     }
+    versionSelect.addEventListener('change', function() {
+        if (cssPathField) {
+            cssPathField.style.display = this.value === '3' ? 'none' : '';
+        }
+        if (autoDetectFeedback) {
+            autoDetectFeedback.style.display = this.value === 'auto' ? '' : 'none';
+        }
+    });
 })();
 {% endjs %}
 
@@ -100,13 +118,14 @@
 }) }}
 {{ overrideWarning('cssVariables', overrides) }}
 
-{{ forms.textField({
+{{ forms.autosuggestField({
     label: 'Class Prefix',
     instructions: 'Tailwind class prefix in bare form, no trailing hyphen. v3 projects: the plugin emits `tw-px-4` (matching your `prefix: \'tw-\'` config). v4 projects: the plugin emits `tw:px-4` (matching the v4 `prefix(tw)` CSS directive). Leave blank if you do not use a prefix.',
     id: 'prefix',
     name: 'prefix',
     value: settings.prefix,
     placeholder: 'e.g. tw',
+    suggestEnvVars: true,
     errors: settings.getErrors('prefix'),
     disabled: overrides.prefix is defined,
 }) }}

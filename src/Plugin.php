@@ -124,11 +124,28 @@ class Plugin extends BasePlugin
         /** @var \craft\web\Application $app */
         $app = Craft::$app;
 
+        $settings = $this->getSettings();
+
+        // Pre-compute the auto-detect result so the settings template can
+        // surface "v3 detected via tailwind.config.js" to the editor. The
+        // detector is request-scoped so re-running it here costs at most a
+        // handful of file_exists calls; the result is then served from
+        // memo on any later detect() call in the same request.
+        $detector = $this->versionDetector;
+        $autoDetectVersion = $detector->detect(
+            'auto',
+            $settings->buildchainPath,
+            $settings->cssPath,
+        );
+        $autoDetectReason = $detector->getLastReason();
+
         return $app->getView()->renderTemplate(
             'tailwind/settings',
             [
-                'settings' => $this->getSettings(),
+                'settings' => $settings,
                 'overrides' => $app->getConfig()->getConfigFromFile('tailwind'),
+                'autoDetectVersion' => $autoDetectVersion,
+                'autoDetectReason' => $autoDetectReason,
             ],
         );
     }
