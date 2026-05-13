@@ -43,46 +43,33 @@ $hitRate = $totalCalls > 0 ? round(($cacheHits / $totalCalls) * 100, 1) : 0.0;
     .tailwind-panel .muted {
         color: #999;
     }
+
+    .tailwind-panel p {
+        margin: 0 0 6px;
+    }
 </style>
 
 <div class="tailwind-panel">
     <h1>Tailwind Merges</h1>
 
-    <div class="summary">
-        <div class="row">
-            <strong>Detected version:</strong> Tailwind v<?= Html::encode($version) ?>
-        </div>
-        <div class="row">
-            <strong>Total calls:</strong> <?= $totalCalls ?>
-            (<?= $unique ?> unique,
-            <?= $resolved ?> resolved a conflict)
-        </div>
-        <div class="row">
-            <strong>Cache:</strong> <?= $cacheHits ?> hits
-            (<?= $hitRate ?>% hit rate),
-            <?= $cacheSize ?> entries held
-        </div>
-        <div class="row">
-            <strong>Typography:</strong>
-            <?php if ($typography === null): ?>
-                <span class="muted">disabled</span>
-            <?php else:
-                $sizeCount = count($typography['sizes'] ?? []);
-                $colorCount = count($typography['colors'] ?? []);
-                $customSuffixes = array_map(
-                    static fn(string $suffix): string => 'prose-' . $suffix,
-                    [...($typography['extraSizes'] ?? []), ...($typography['extraColors'] ?? [])],
-                );
-                ?>
-                enabled (<?= $sizeCount ?> sizes, <?= $colorCount ?> colors)
-                <?php if ($customSuffixes !== []): ?>
-                    <span class="muted">
-                        &middot; custom: <?= Html::encode(implode(', ', $customSuffixes)) ?>
-                    </span>
-                <?php endif; ?>
-            <?php endif; ?>
-        </div>
-    </div>
+    <p>Detected version: <strong>Tailwind v<?= Html::encode($version) ?></strong></p>
+    <p>Total calls: <strong><?= $totalCalls ?></strong> (<?= $unique ?> unique, <?= $resolved ?> resolved a conflict).</p>
+    <p>Cache: <strong><?= $cacheHits ?></strong> hits (<?= $hitRate ?>% hit rate), <?= $cacheSize ?> entries held.</p>
+    <p>
+        Typography:
+        <?php if ($typography === null): ?>
+            <span class="muted">disabled</span>
+        <?php else:
+            $sizeCount = count($typography['sizes'] ?? []);
+            $colorCount = count($typography['colors'] ?? []);
+            $customSuffixes = array_map(
+                static fn(string $suffix): string => 'prose-' . $suffix,
+                [...($typography['extraSizes'] ?? []), ...($typography['extraColors'] ?? [])],
+            );
+            ?>
+            <strong>enabled</strong> (<?= $sizeCount ?> sizes, <?= $colorCount ?> colors)<?php if ($customSuffixes !== []): ?> <span class="muted">&middot; custom: <?= Html::encode(implode(', ', $customSuffixes)) ?></span><?php endif; ?>
+        <?php endif; ?>
+    </p>
 
     <?php if ($merges === []): ?>
         <p><em>No merge operations recorded for this request.</em></p>
